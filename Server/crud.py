@@ -11,6 +11,19 @@ def create_user(db: Session, user: schemas.UserCreate):
     return db_user
 
 
+def get_users(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(models.Users).offset(skip).limit(limit).all()
+
+
+def delete_user(db: Session, user_id: int):
+    db_user = db.query(models.Users).filter(models.Users.id == user_id).first()
+    if db_user:
+        db.delete(db_user)
+        db.commit()
+
+    return db_user
+
+
 def get_user(db: Session, user_id: int):
     return db.query(models.Users).filter(models.Users.id == user_id).first()
 
@@ -19,8 +32,9 @@ def get_user_by_email(db: Session, email: str):
     return db.query(models.Users).filter(models.Users.email == email).first()
 
 
-def create_shopping_list(db: Session, shopping_list: schemas.ShoppingListCreate, user_id: int):
-    db_shopping_list = models.ShoppingList(**shopping_list.model_dump(), users=[models.Users(id=user_id)])
+def create_shopping_list(db: Session, shopping_list: schemas.ShoppingListCreate, user: models.Users):
+    db_shopping_list = models.ShoppingList(name=shopping_list.name)
+    user.shopping_lists.append(db_shopping_list)
     db.add(db_shopping_list)
     db.commit()
     db.refresh(db_shopping_list)

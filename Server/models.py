@@ -16,8 +16,9 @@ class Users(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    email = Column(String, unique=True, index=True)
+    name = Column(String, index=True, nullable=False)
+    email = Column(String, unique=True, index=True, nullable=False)
+    password = Column(String, nullable=False)
     shopping_lists = relationship("ShoppingList", secondary=user_list, back_populates="users")
 
 
@@ -25,7 +26,7 @@ class ShoppingList(Base):
     __tablename__ = "shopping_lists"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
+    name = Column(String, index=True, nullable=False)
     users = relationship("Users", secondary=user_list, back_populates="shopping_lists")
     items = relationship("Item", back_populates="list")
 
@@ -34,8 +35,8 @@ class Item(Base):
     __tablename__ = "items"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
+    name = Column(String, index=True, nullable=False)
     list_id = Column(Integer, ForeignKey("shopping_lists.id"))
     list = relationship("ShoppingList", back_populates="items")
-    bought = Column(Boolean, index=True)
-    quantity = Column(Integer, index=True)
+    bought = Column(Boolean, index=True, nullable=False, default=False)
+    quantity = Column(Integer, index=True, nullable=False)

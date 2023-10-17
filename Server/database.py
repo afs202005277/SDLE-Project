@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 import os
 
 if not os.environ.get("DATABASE_URL"):
-    SQLALCHEMY_DATABASE_URL = "postgresql://vaxpred-admin:vaxpred-password@localhost:5432/postgres"
+    SQLALCHEMY_DATABASE_URL = "postgresql://sdle:sdle@localhost:5432/postgres"
 else:
     SQLALCHEMY_DATABASE_URL = os.environ.get("DATABASE_URL")
 

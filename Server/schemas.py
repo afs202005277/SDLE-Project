@@ -2,18 +2,10 @@ from pydantic import BaseModel
 from typing import List, Union
 
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    email: Union[str, None] = None
-
-
 class ItemBase(BaseModel):
     name: str
     quantity: int
+    bought: bool = False
 
 
 class ItemCreate(ItemBase):
@@ -22,7 +14,6 @@ class ItemCreate(ItemBase):
 
 class Item(ItemBase):
     id: int
-    bought: bool
 
     class Config:
         orm_mode = True
@@ -38,7 +29,7 @@ class ShoppingListCreate(ShoppingListBase):
 
 class ShoppingList(ShoppingListBase):
     id: int
-    items = List[Item]
+    items: List[Item]
 
     class Config:
         orm_mode = True
@@ -53,9 +44,25 @@ class UserCreate(UserBase):
     password: str
 
 
-class User(UserBase):
+class UserWithoutList(UserBase):
     id: int
-    shoppingLists: List[ShoppingList] = []
+
+
+class User(UserWithoutList):
+    shopping_lists: List[ShoppingList] = []
 
     class Config:
         orm_mode = True
+
+
+class ShoppingListWithUsers(ShoppingList):
+    users: List[UserWithoutList] = []
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    email: Union[str, None] = None

@@ -29,3 +29,5 @@ not_found_exception = HTTPException(
     detail="The resource you are looking for cannot be found",
     headers={"WWW-Authenticate": "Bearer"},
 )
+
+email_already_registered = HTTPException(status_code=400, detail="Email already registered")
