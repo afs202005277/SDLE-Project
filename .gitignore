@@ -15,3 +15,4 @@ build/
 *.egg-info/
 
 .idea/
+flask_session/

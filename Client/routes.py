@@ -1,7 +1,107 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, redirect, request, session
+import requests
+
+def if_token(return_good, return_bad):
+    if "token" in session:
+        return return_good
+    return return_bad
+
+def login_token_request(email, password):
+    url = "http://localhost:8000/token"
+
+    headers = {
+        "accept": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+
+    data = {
+        "username": email,
+        "password": password,
+    }
+
+    return requests.post(url, headers=headers, data=data)
+
+def create_user(username, email, password):
+    url = "http://localhost:8000/users/"
+
+    headers = {
+        "accept": "application/json",
+        "Content-Type": "application/json",
+    }
+
+    data = {
+        "name": username,
+        "email": email,
+        "password": password,
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+
+    if response.status_code == 200:
+        return True
+    else:
+        return False
+
 
 bp = Blueprint('api', __name__)
 
+# GET
+
 @bp.route('/')
-def index():
-    return render_template('index.html')
+def redirect_index():
+    return redirect('/login')
+
+
+@bp.route('/login')
+def login():
+    return if_token(redirect('/home'), render_template('login.html'))
+
+
+@bp.route('/register')
+def register():
+    return if_token(redirect('/home'), render_template('register.html'))
+
+
+@bp.route('/home')
+def home():
+    return if_token(render_template('home.html'), redirect('/login'))
+
+@bp.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
+
+
+# POST
+
+@bp.route('/login', methods=['POST'])
+def login_post():
+    email = request.form.get('email')
+    password = request.form.get('password')
+    
+    response = login_token_request(email, password)
+
+    if response.status_code == 200:
+        session['token'] = response.json()["access_token"]
+        return redirect('/home')
+    elif response.status_code == 401:
+        return render_template('login.html', error_message="Wrong Username or Password")
+    else:
+        print("Request failed with status code:", response.status_code)
+        return render_template('login.html', error_message="An error occured")
+
+@bp.route('/register', methods=['POST'])
+def register_post():
+    username = request.form.get('user')
+    email = request.form.get('email')
+    password = request.form.get('password')
+
+    if not create_user(username, email, password):
+        return render_template('register.html', error_message="An error occured")
+    
+    response = login_token_request(email, password)    
+    if response.status_code == 200:
+        session['token'] = response.json()["access_token"]
+        return redirect('/home')
+    else:
+        return render_template('register.html', error_message="An error occured")
