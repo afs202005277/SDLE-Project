@@ -25,13 +25,13 @@ class HashingRing:
 
         return self.nodes_positions
 
-    def find_smallest_greater(self, target_value):
+    def find_main_database_id(self, request_id_hash):
         smallest_greater = None
         database_identifier = None
 
         for identifier, values in self.nodes_positions.items():
             for value in values:
-                if value > target_value:
+                if value > request_id_hash:
                     if smallest_greater is None or value < smallest_greater:
                         smallest_greater = value
                         database_identifier = identifier
@@ -51,5 +51,5 @@ if __name__ == '__main__':
     hashing_ring = HashingRing(database_management.get_num_primary_connections())
     results = dict((x, 0) for x in range(database_management.get_num_primary_connections()))
     for i in range(10000):
-        results[hashing_ring.find_smallest_greater(HashingRing.compute_md5_hash(i))] += 1
+        results[hashing_ring.find_main_database_id(HashingRing.compute_md5_hash(i))] += 1
     print(results)

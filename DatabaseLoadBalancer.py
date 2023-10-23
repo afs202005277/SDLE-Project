@@ -27,7 +27,7 @@ if __name__ == '__main__':
         for replica in range(db_list):
             results[(main_connection, replica)] = 0
     for i in range(10000):
-        main_connection_id = hashing_ring.find_smallest_greater(HashingRing.compute_md5_hash(i))
+        main_connection_id = hashing_ring.find_main_database_id(HashingRing.compute_md5_hash(i))
         replica_id = load_balancer.route_to_database(main_connection_id)
         results[(main_connection_id, replica_id)] += 1
     print(results)
