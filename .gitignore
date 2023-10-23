@@ -16,3 +16,5 @@ build/
 
 .idea/
 flask_session/
+
+db-18.1.40/

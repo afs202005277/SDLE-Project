@@ -1,0 +1,55 @@
+import hashlib
+import random
+
+from DatabaseManagement import DatabaseManagement
+
+
+class HashingRing:
+
+    def __init__(self, num_databases):
+        self.nodes_positions = dict()
+        self.num_databases = num_databases
+        random.seed(120)  # best seed to balanced loads
+        self.divide_hash_ring_into_segments()
+
+    @staticmethod
+    def compute_md5_hash(identifier):
+        id_str = str(identifier)
+        hash_obj = hashlib.md5(id_str.encode())
+        return int(hash_obj.hexdigest(), 16)
+
+    def divide_hash_ring_into_segments(self):
+        for database_id in range(self.num_databases):
+            positions = [random.randint(1, 2 ** 128 - 1) for _ in range(3)]  # adding virtual nodes
+            self.nodes_positions[database_id] = positions
+
+        return self.nodes_positions
+
+    def find_smallest_greater(self, target_value):
+        smallest_greater = None
+        database_identifier = None
+
+        for identifier, values in self.nodes_positions.items():
+            for value in values:
+                if value > target_value:
+                    if smallest_greater is None or value < smallest_greater:
+                        smallest_greater = value
+                        database_identifier = identifier
+
+        if database_identifier is None:
+            smallest_value = 2 ** 128 - 1
+            for identifier, values in self.nodes_positions.items():
+                tmp_smallest = min(values)
+                if tmp_smallest < smallest_value:
+                    smallest_value = tmp_smallest
+                    database_identifier = identifier
+        return database_identifier
+
+
+if __name__ == '__main__':
+    database_management = DatabaseManagement()
+    hashing_ring = HashingRing(database_management.get_num_primary_connections())
+    results = dict((x, 0) for x in range(database_management.get_num_primary_connections()))
+    for i in range(10000):
+        results[hashing_ring.find_smallest_greater(HashingRing.compute_md5_hash(i))] += 1
+    print(results)
