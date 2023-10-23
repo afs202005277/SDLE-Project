@@ -1,6 +1,6 @@
 import berkeleydb
 
-db_path = "./databases/test_db.db"
+db_path = "../databases/test_db.db"
 db = berkeleydb.hashopen(db_path, "c")  # "c" indicates create mode
 
 # Insert data into the database

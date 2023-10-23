@@ -1,5 +1,30 @@
 # SDLE-Project
 
+General JSON request to server:
+
+- type: AddItem, BoughtItem, CreateList, DeleteList
+- token: user's personal token
+
+Extra fields according to type of request:
+
+    AddItem request:
+    - name: name of the item
+    - quantity: quantity of the item needed
+    - listId: id of the list to add the item
+    
+    BuyItem request:
+    - name: name of the item
+    - listId: id of the list to add the item
+    
+    CreateList request:
+    - name: name of the list
+    - items: json array of Item objects
+    
+    DeleteList request:
+    - name: name of the list
+
+
+
 
 ## Team
 

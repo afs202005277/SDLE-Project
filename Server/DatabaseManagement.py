@@ -4,7 +4,7 @@ import berkeleydb.db as bdb
 
 
 class DatabaseManagement:
-    DATABASES_PATH = "./databases"
+    DATABASES_PATH = "../databases"
 
     def __init__(self):
         self.database_connections = self.initialize_databases()
