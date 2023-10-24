@@ -1,5 +1,7 @@
 from flask import Blueprint, render_template, redirect, request, session
 import requests
+from time import sleep
+import zmq
 
 def if_token(return_good, return_bad):
     if "token" in session:
@@ -49,7 +51,12 @@ bp = Blueprint('api', __name__)
 
 @bp.route('/')
 def redirect_index():
-    return redirect('/login')
+    return redirect('/test')
+
+@bp.route('/test')
+def test():
+    return if_token(redirect('/test'), render_template('test.html'))
+
 
 
 @bp.route('/login')
@@ -73,6 +80,18 @@ def logout():
 
 
 # POST
+
+@bp.route('/test/createList', methods=['POST'])
+def create_list():
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5559")
+    socket.send(b"CREATE LIST")
+    message = socket.recv()
+    sleep(1)
+    return redirect('/test')
+
+
 
 @bp.route('/login', methods=['POST'])
 def login_post():
