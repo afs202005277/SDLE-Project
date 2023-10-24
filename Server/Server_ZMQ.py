@@ -1,7 +1,7 @@
 import zmq
 
-from Server.DatabaseManagement import DatabaseManagement
-from Server.HashingRing import HashingRing
+from DatabaseManagement import DatabaseManagement
+from HashingRing import HashingRing
 
 
 class Server:
