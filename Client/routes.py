@@ -87,7 +87,37 @@ def create_list():
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
     socket.send(b"CREATE LIST")
-    message = socket.recv()
+    socket.recv()
+    sleep(1)
+    return redirect('/test')
+
+@bp.route('/test/addToList', methods=['POST'])
+def add_to_list():
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5559")
+    socket.send(b"ADD TO LIST")
+    socket.recv()
+    sleep(1)
+    return redirect('/test')
+
+@bp.route('/test/removeFromList', methods=['POST'])
+def remove_from_list():
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5559")
+    socket.send(b"REMOVE FROM LIST")
+    socket.recv()
+    sleep(1)
+    return redirect('/test')
+
+@bp.route('/test/buyItem', methods=['POST'])
+def buy_item():
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5559")
+    socket.send(b"BUY ITEM")
+    socket.recv()
     sleep(1)
     return redirect('/test')
 
