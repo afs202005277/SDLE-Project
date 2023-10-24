@@ -3,9 +3,10 @@ import os
 import berkeleydb.db as bdb
 from DatabaseLoadBalancer import DatabaseLoadBalancer
 
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class DatabaseManagement:
-    DATABASES_PATH = "../databases"
+    DATABASES_PATH = f"{ROOT_DIR}/../databases"
 
     def __init__(self):
         self.database_connections = self.__initialize_databases()

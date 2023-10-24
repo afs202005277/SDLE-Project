@@ -1,7 +1,12 @@
 import zmq
+import os, sys
 
-from Server.DatabaseManagement import DatabaseManagement
-from Server.HashingRing import HashingRing
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+sys.path.append(f'{ROOT_DIR}/')
+
+from DatabaseManagement import DatabaseManagement
+from HashingRing import HashingRing
 
 
 class Server:
