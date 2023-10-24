@@ -21,7 +21,7 @@ Extra fields according to type of request:
     - items: json array of Item objects
     
     DeleteList request:
-    - name: name of the list
+    - id: id of the list
 
 
 

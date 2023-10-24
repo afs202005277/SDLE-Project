@@ -1,8 +1,6 @@
 import hashlib
 import random
 
-from DatabaseManagement import DatabaseManagement
-
 
 class HashingRing:
 
@@ -47,6 +45,7 @@ class HashingRing:
 
 
 if __name__ == '__main__':
+    from DatabaseManagement import DatabaseManagement
     database_management = DatabaseManagement()
     hashing_ring = HashingRing(database_management.get_num_primary_connections())
     results = dict((x, 0) for x in range(database_management.get_num_primary_connections()))

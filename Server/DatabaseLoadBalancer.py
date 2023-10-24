@@ -1,4 +1,3 @@
-from DatabaseManagement import DatabaseManagement
 from HashingRing import HashingRing
 
 
@@ -17,6 +16,7 @@ class DatabaseLoadBalancer:
 
 
 if __name__ == '__main__':
+    from DatabaseManagement import DatabaseManagement
     database_management = DatabaseManagement()
     load_balancer = DatabaseLoadBalancer(database_management.get_num_primary_connections(),
                                          database_management.get_num_replicas_connections())

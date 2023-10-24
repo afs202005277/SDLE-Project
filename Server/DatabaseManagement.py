@@ -1,15 +1,69 @@
 import json
 import os
 import berkeleydb.db as bdb
+from DatabaseLoadBalancer import DatabaseLoadBalancer
 
 
 class DatabaseManagement:
     DATABASES_PATH = "../databases"
 
     def __init__(self):
-        self.database_connections = self.initialize_databases()
+        self.database_connections = self.__initialize_databases()
+        self.next_id = self.__get_highest_id_across_databases()
+        self.load_balancer = DatabaseLoadBalancer(self.get_num_primary_connections(),
+                                                  self.get_num_replicas_connections())
 
-    def initialize_databases(self):
+    def replace_list(self, main_database_id, list_object):
+        replica_id = self.load_balancer.route_to_database(main_database_id)
+        self.__insert_list(main_database_id, replica_id, list_object, list_object["id"])
+
+    def insert_list(self, main_database_id, list_object):
+        replica_id = self.load_balancer.route_to_database(main_database_id)
+        self.__insert_list(main_database_id, replica_id, list_object)
+
+    def delete_list(self, main_database_id, list_id):
+        replica_id = self.load_balancer.route_to_database(main_database_id)
+        self.__delete_list(main_database_id, replica_id, list_id)
+
+    def retrieve_list(self, main_database_id, list_id):
+        replica_id = self.load_balancer.route_to_database(main_database_id)
+        res = self.__retrieve_list(main_database_id, replica_id, list_id)
+        if res is None:
+            return "List not found"
+        return json.loads(res.decode('utf-8'))
+
+    def close_databases(self):
+        # Close all the database connections
+        for database_list in self.database_connections.values():
+            for database in database_list:
+                database.close()
+
+    def get_num_primary_connections(self):
+        return len(self.database_connections.keys())
+
+    def get_num_replicas_connections(self):
+        return dict((x, len(y)) for x, y in self.database_connections.items())
+
+    def __get_highest_id_across_databases(self):
+        highest_id = 1
+
+        for database_list in self.database_connections.values():
+            for database in database_list:
+                cursor = database.cursor()
+                record = cursor.last()
+                if record is not None:
+                    id_in_bytes, _ = record
+                    current_id = int(id_in_bytes.decode('utf-8'))
+                    highest_id = max(highest_id, current_id)
+
+        return highest_id
+
+    def __get_id(self):
+        res = str(self.next_id)
+        self.next_id += 1
+        return res
+
+    def __initialize_databases(self):
         # Create connections to the databases inside the "databases" folder
         database_connections = {}
 
@@ -28,45 +82,58 @@ class DatabaseManagement:
         return database_connections
 
     # saves in all 3 databases of the folder
-    def insert_object(self, main_database_id, replica_id, data_object):
+    def __insert_list(self, main_database_id, replica_id, list_object, id_to_use=None):
         database_list = self.database_connections.get(main_database_id, [])
-        if replica_id < len(database_list):
-            for database in database_list:
-                database.put(data_object["id"].encode('utf-8'), json.dumps(data_object).encode('utf-8'))
+        if id_to_use is None:
+            id_to_use = self.__get_id()
+        list_object["id"] = id_to_use
+        id_to_use = str(id_to_use)
+        for database in database_list:
+            database.put(id_to_use.encode('utf-8'), json.dumps(list_object).encode('utf-8'))
+            database.sync()
 
-    def retrieve_object(self, main_database_id, replica_id, object_id):
+    def __retrieve_list(self, main_database_id, replica_id, list_id):
+        list_id = str(list_id)
         # Retrieve a JSON data object from the specified database by ID
         database_list = self.database_connections.get(main_database_id, [])
         for database in database_list:
-            if replica_id < len(database_list):
-                res = database.get(object_id.encode('utf-8'), None)
-                if res is not None:
-                    return res
+            res = database.get(list_id.encode('utf-8'), None)
+            if res is not None:
+                return res
         return None
 
-    def close_databases(self):
-        # Close all the database connections
-        for database_list in self.database_connections.values():
-            for database in database_list:
-                database.close()
-
-    def get_num_primary_connections(self):
-        return len(self.database_connections.keys())
-
-    def get_num_replicas_connections(self):
-        return dict((x, len(y)) for x, y in self.database_connections.items())
+    def __delete_list(self, main_database_id, replica_id, list_id):
+        list_id = str(list_id)
+        database_list = self.database_connections.get(main_database_id, [])
+        for database in database_list:
+            database.delete(list_id.encode('utf-8'))
+        return None
 
 
 if __name__ == '__main__':
     db_manager = DatabaseManagement()
 
-    db_manager.insert_object(0, 0, {
-        "id": "1",
+    data = {
+        "id": "30",  # this id will be ignored and replaced by a computed id
         "name": "Object 1",
-        "contents": [{"name": "Item 2", "quantity": 10}]
-    })
+        "items": [{"name": "Item 2", "quantity": 30}]
+    }
 
-    obj = db_manager.retrieve_object(0, 0, "1")
+    # db_manager.insert_list(0, data)
+
+    data = {
+        "id": "2",
+        "name": "Object 1",
+        "items": [{"name": "Item 2", "quantity": 2}]
+    }
+
+    # db_manager.insert_list(0, data)
+
+    obj = db_manager.retrieve_list(0, "1")
+    print(obj)
+    obj = db_manager.retrieve_list(0, "30")
+    print(obj)
+    obj = db_manager.retrieve_list(0, "2")
     print(obj)
 
     db_manager.close_databases()
