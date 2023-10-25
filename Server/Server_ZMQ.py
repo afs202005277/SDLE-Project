@@ -22,7 +22,7 @@ class Server:
         num_primary_cons = self.db_management.get_num_primary_connections()
         self.hashing_ring = HashingRing(num_primary_cons)
         self.request_handlers = {'AddItem': self.add_item, 'BuyItem': self.buy_item, 'CreateList': self.create_list,
-                                 'DeleteList': self.delete_list, 'Login': self.login}
+                                 'DeleteList': self.delete_list, 'DeleteItem': self.delete_item, 'RenameItem': self.rename_item, 'Login': self.login}
         self.db_forbidden_parameters = ['token', 'type']
 
     def remove_attributes(self, json_obj):
@@ -68,27 +68,54 @@ class Server:
             return True
         else:
             return False
-
-    def buy_item(self, request):
-        if not self.is_authenticated(request):
-            return {"error": "Invalid token"}
+        
+    def add_item(self, request):
+        #if not self.is_authenticated(request):
+        #    return {"error": "Invalid token"}
         list_id = request["list_id"]
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
+        if not list_object:
+            print("List not Found")
+            return 
         items = list_object['items']
-        new_items = []
+        found = False
         for item in items:
             if item['name'] == request['name']:
-                item['quantity'] = 0
-            new_items.append(item)
-        list_object['items'] = new_items
+                item['quantity'] += request['quantity']
+                found = True
+                break
+        
+        if not found:
+            items.append({'name': request['name'], 'quantity': request['quantity']})
+            
+        list_object['items'] = items
+        self.db_management.replace_list(main_database_id, list_object)
+        print("Success!")
+        print(self.db_management.retrieve_list(main_database_id, list_id))
+
+    def buy_item(self, request):
+        #if not self.is_authenticated(request):
+        #    return {"error": "Invalid token"}
+        list_id = request["list_id"]
+        main_database_id = self.hashing_ring.find_main_database_id(list_id)
+        list_object = self.db_management.retrieve_list(main_database_id, list_id)
+        if not list_object:
+            print("List not Found")
+            return 
+        items = list_object['items']
+        for item in items:
+            if item['name'] == request['name']:
+                item['quantity'] -= 1
+
+        list_object['items'] = items
         self.db_management.replace_list(main_database_id, list_object)
         print("Success!")
         print(self.db_management.retrieve_list(main_database_id, list_id))
 
     def create_list(self, request):
-        if not self.is_authenticated(request):
-            return {"error": "Invalid token"}
+        #if not self.is_authenticated(request):
+        #    return {"error": "Invalid token"}
         list_id = self.db_management.next_id
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         self.db_management.insert_list(main_database_id, request)
@@ -96,12 +123,61 @@ class Server:
         print(self.db_management.retrieve_list(main_database_id, list_id))
 
     def delete_list(self, request):
-        if not self.is_authenticated(request):
-            return {"error": "Invalid token"}
+        #if not self.is_authenticated(request):
+        #    return {"error": "Invalid token"}
         main_database_id = self.hashing_ring.find_main_database_id(request["list_id"])
         self.db_management.delete_list(main_database_id, request["list_id"])
         print("Success!")
         print(self.db_management.retrieve_list(main_database_id, request["list_id"]))
+
+    def delete_item(self, request):
+        #if not self.is_authenticated(request):
+        #    return {"error": "Invalid token"}
+        list_id = request["list_id"]
+        main_database_id = self.hashing_ring.find_main_database_id(list_id)
+        list_object = self.db_management.retrieve_list(main_database_id, list_id)
+        if not list_object:
+            print("List not Found")
+            return 
+        items = list_object['items']
+        for item in items:
+            if item['name'] == request['name']:
+                items.remove(item)
+
+        list_object['items'] = items
+        self.db_management.replace_list(main_database_id, list_object)
+        print("Success!")
+        print(self.db_management.retrieve_list(main_database_id, list_id))
+
+    def rename_item(self, request):
+        #if not self.is_authenticated(request):
+        #    return {"error": "Invalid token"}
+        list_id = request["list_id"]
+        main_database_id = self.hashing_ring.find_main_database_id(list_id)
+        list_object = self.db_management.retrieve_list(main_database_id, list_id)
+        if not list_object:
+            print("List not Found")
+            return 
+        items = list_object['items']
+        renamed = {}
+        for item in items:
+            if item['name'] == request['name']:
+                item['name'] = request['newName']
+                renamed = item
+                items.remove(item)
+                break
+        found = False
+        for item in items:
+            if item['name'] == request['newName']:
+                item['quantity'] += renamed['quantity']
+                found = True
+                break
+        if not found:
+            items.append(renamed)
+        list_object['items'] = items
+        self.db_management.replace_list(main_database_id, list_object)
+        print("Success!")
+        print(self.db_management.retrieve_list(main_database_id, list_id))
 
     def run(self):
         context = zmq.Context()

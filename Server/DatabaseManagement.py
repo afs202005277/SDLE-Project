@@ -30,7 +30,7 @@ class DatabaseManagement:
         replica_id = self.load_balancer.route_to_database(main_database_id)
         res = self.__retrieve_list(main_database_id, replica_id, list_id)
         if res is None:
-            return "List not found"
+            return []
         return json.loads(res.decode('utf-8'))
 
     def close_databases(self):
@@ -71,6 +71,8 @@ class DatabaseManagement:
         for folder_name in os.listdir(self.DATABASES_PATH):
             folder_path = os.path.join(self.DATABASES_PATH, folder_name)
 
+            if folder_name.isalpha(): continue
+
             if os.path.isdir(folder_path):
                 database_connections[int(folder_name)] = []
                 for file_name in os.listdir(folder_path):
@@ -107,7 +109,10 @@ class DatabaseManagement:
         list_id = str(list_id)
         database_list = self.database_connections.get(main_database_id, [])
         for database in database_list:
-            database.delete(list_id.encode('utf-8'))
+            try:
+                database.delete(list_id.encode('utf-8'))
+            except:
+                print("Couldn't delete list")
         return None
 
 

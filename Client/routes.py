@@ -103,18 +103,38 @@ def add_to_list():
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
-    data = {"type": "AddItem", "token": "", "name": "bananas", "quantity": 56, "list_id": 1}
+    data = {"type": "AddItem", "token": "", "name": "bananas", "quantity": 6, "list_id": 1}
     socket.send_json(data)
     sleep(1)
     return redirect('/test')
 
 
-@bp.route('/test/removeFromList', methods=['POST'])
-def remove_from_list():
+@bp.route('/test/removeList', methods=['POST'])
+def remove_list():
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
     data = {"type": "DeleteList", "token": "", "list_id": 1}
+    socket.send_json(data)
+    sleep(1)
+    return redirect('/test')
+
+@bp.route('/test/removeItem', methods=['POST'])
+def remove_item():
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5559")
+    data = {"type": "DeleteItem", "token": "", "name": "bananas", "list_id": 1}
+    socket.send_json(data)
+    sleep(1)
+    return redirect('/test')
+
+@bp.route('/test/renameItem', methods=['POST'])
+def rename_item():
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5559")
+    data = {"type": "RenameItem", "token": "", "name": "bananas", "newName": "apples", "list_id": 1}
     socket.send_json(data)
     sleep(1)
     return redirect('/test')
