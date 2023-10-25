@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline Shopping List</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="../static/js/offline.js" defer></script>
+</head>
+<body>
+    <main>
+        <h1 class="w-100 bg-primary text-center p-2 fs-3 text-white">Shopping List</h1>
+
+        <div id="wrapper">
+            <div class="bg-secondary d-flex flex-column align-items-center text-white">
+                <h2 class="mt-4">Your lists:</h2>
+                <ul id="others" class="list-group w-100 gap-3"></ul>
+        
+                <form id="addListForm" class="w-100 d-flex flex-column mt-5 gap-1">
+                    <label for="list" class="text-center">Add a new list:</label>
+                    <div class="w-100 d-flex align-items-center justify-content-center">
+                        <input type="text" class="form-control w-75" id="list" required placeholder="Enter URL/Name of the list...">
+                        <button class="btn" type="submit"><i class="fa-solid fa-right-to-bracket text-white"></i></button>
+                    </div>
+                </form>        
+            </div>
+            <div class="d-flex flex-column align-items-center">
+                <h3 class="my-4"></h3>
+
+                <form id="addItemForm" class="w-50 d-flex flex-column my-2 gap-1 align-items-center">
+                    <label for="item">Add New Item:</label>
+                    <div class="w-100 d-flex align-items-center justify-content-center">
+                        <input type="text" class="form-control" id="item" required placeholder="Enter name of item...">
+                        <input type="number" id="quantity" class="form-control w-25" value="1"/>
+                        <button class="btn" type="submit"><i class="fa-solid fa-right-to-bracket"></i></button>
+                    </div>
+                </form>
+            
+                <h4 class="mt-3">Items:</h4>
+                <ul id="shoppingList" class="w-100"></ul>
+            </div>
+        </div>
+    </main>
+
+    {% include "modal_rename.html" %}
+    {% include "modal_delete.html" %}
+</body>
+</html>
+
+<style>
+    :root{
+        --bs-primary-rgb: 44, 61, 85;
+        --bs-secondary-rgb: 62, 76, 94;
+    }
+
+    h1{
+        margin: 0;
+        padding: 0;
+    }
+
+    li{
+        list-style: none;
+    }
+
+    html,body,main,#wrapper{
+        width: 100%;
+        height: 100%;
+    }
+
+    main{
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #wrapper{
+        width: 100vw;
+        display: flex;
+        align-items: center;
+    }
+
+    #wrapper > div:first-child{
+        width: 20rem;
+        height: 100%;
+    }
+
+    #others li > span:first-child{
+        cursor: pointer;
+    }
+
+    #wrapper > div:last-child{
+        flex-grow: 1;
+        height: 100%;
+    }
+
+    input::placeholder {
+        font-size: .8rem;
+    }   
+</style>
