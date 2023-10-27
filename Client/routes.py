@@ -19,7 +19,7 @@ def login_token_request(email, password):
     }
 
     data = {
-        "username": email,
+        "email": email,
         "password": password,
     }
 
@@ -55,12 +55,9 @@ bp = Blueprint('api', __name__)
 
 @bp.route('/')
 def redirect_index():
-    return if_token(redirect('/offline'), render_template('offline.html'))
+    return redirect('/login')
 
 
-@bp.route('/test')
-def test():
-    return if_token(redirect('/test'), render_template('test.html'))
 
 
 @bp.route('/login')
@@ -75,7 +72,7 @@ def register():
 
 @bp.route('/home')
 def home():
-    return if_token(render_template('home.html'), redirect('/login'))
+    return if_token(render_template('offline.html'), redirect('/login'))
 
 
 @bp.route('/logout')
@@ -86,69 +83,67 @@ def logout():
 
 # POST
 
-@bp.route('/test/createList', methods=['POST'])
+@bp.route('/req/createList', methods=['POST'])
 def create_list():
+    data = request.get_json()
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
-    data = {"type": "CreateList", "token": "", "name": "Lista de Teste",
-            "items": [{"name": "peaches", "quantity": 3}, {"name": "pencils", "quantity": 1}]}
+    data = {"type": "CreateList", "token": session['token'], "list_name": data.get('list_name'), "items": []}
     socket.send_json(data)
-    sleep(1)
-    return redirect('/test')
+    return ''
 
 
-@bp.route('/test/addToList', methods=['POST'])
+@bp.route('/req/addToList', methods=['POST'])
 def add_to_list():
+    data = request.get_json()
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
-    data = {"type": "AddItem", "token": "", "name": "bananas", "quantity": 6, "list_id": 1}
-    socket.send_json(data)
-    sleep(1)
-    return redirect('/test')
+    data = {"type": "AddItem", "token": session['token'], "name": data.get('item_name'), "quantity": data.get('quantity'), "list_name": data.get('list_name')}
+    socket.send_json(data) 
+    return ''
 
 
-@bp.route('/test/removeList', methods=['POST'])
+@bp.route('/req/removeList', methods=['POST'])
 def remove_list():
+    data = request.get_json()
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
-    data = {"type": "DeleteList", "token": "", "list_id": 1}
+    data = {"type": "DeleteList", "token": session['token'], "list_name": data.get('list_name')}
     socket.send_json(data)
-    sleep(1)
-    return redirect('/test')
+    return ''
 
-@bp.route('/test/removeItem', methods=['POST'])
+@bp.route('/req/removeItem', methods=['POST'])
 def remove_item():
+    data = request.get_json()
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
-    data = {"type": "DeleteItem", "token": "", "name": "bananas", "list_id": 1}
-    socket.send_json(data)
-    sleep(1)
-    return redirect('/test')
+    data = {"type": "DeleteItem", "token": session['token'], "name": data.get('name'), "list_name": data.get('list_name')}
+    socket.send_json(data) 
+    return ''
 
-@bp.route('/test/renameItem', methods=['POST'])
+@bp.route('/req/renameItem', methods=['POST'])
 def rename_item():
+    data = request.get_json()
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
-    data = {"type": "RenameItem", "token": "", "name": "bananas", "newName": "apples", "list_id": 1}
-    socket.send_json(data)
-    sleep(1)
-    return redirect('/test')
+    data = {"type": "RenameItem", "token": session['token'], "name": data.get('item_name'), "newName": data.get('new_item_name'), "list_name": data.get('list_name')}
+    socket.send_json(data)   
+    return ''
 
 
-@bp.route('/test/buyItem', methods=['POST'])
+@bp.route('/req/buyItem', methods=['POST'])
 def buy_item():
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
-    data = {"type": "BuyItem", "token": "", "name": "bananas", "list_id": 1}
-    socket.send_json(data)
-    sleep(1)
-    return redirect('/test')
+    data = {"type": "BuyItem", "token": session['token'], "name": "bananas", "list_id": 1}
+    socket.send_json(data)  
+    return ''
 
 
 @bp.route('/login', methods=['POST'])
@@ -156,30 +151,38 @@ def login_post():
     email = request.form.get('email')
     password = request.form.get('password')
 
-    response = login_token_request(email, password)
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5575")
+    data = {"type": "Login", "email": email, "password": password}
+    socket.send_json(data)
+    response = socket.recv_json()
 
-    if response.status_code == 200:
-        session['token'] = response.json()["access_token"]
-        return redirect('/home')
-    elif response.status_code == 401:
-        return render_template('login.html', error_message="Wrong Username or Password")
-    else:
-        print("Request failed with status code:", response.status_code)
-        return render_template('login.html', error_message="An error occured")
+    if "error" in response:
+        return render_template('login.html', error_message=response["error"])
+
+    session['token'] = response["token"]
+    return redirect('/home')
 
 
 @bp.route('/register', methods=['POST'])
 def register_post():
-    username = request.form.get('user')
     email = request.form.get('email')
     password = request.form.get('password')
 
-    if not create_user(username, email, password):
-        return render_template('register.html', error_message="An error occured")
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5575")
+    data = {"type": "Register", "email": email, "password": password}
+    socket.send_json(data)
+    response = socket.recv_json()
 
-    response = login_token_request(email, password)
-    if response.status_code == 200:
-        session['token'] = response.json()["access_token"]
-        return redirect('/home')
-    else:
-        return render_template('register.html', error_message="An error occured")
+    if "error" in response:
+        return render_template('register.html', error_message=response["error"])
+
+    data.update({"type": "Login"})
+    socket.send_json(data)
+    response = socket.recv_json()
+
+    session['token'] = response["token"]
+    return redirect('/home')

@@ -18,3 +18,7 @@ build/
 flask_session/
 
 db-18.1.40/
+
+.DS_STORE
+kill.sh
+process_pids.txt

@@ -1,8 +1,17 @@
-import json
 import os
 import sqlite3
+from jose import jwt
+from passlib.context import CryptContext
+from datetime import timedelta, datetime
+from typing import Union
+import env
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+ACCESS_TOKEN_EXPIRE_MINUTES = env.ACCESS_TOKEN_EXPIRE_MINUTES
+SECRET_KEY = env.SECRET_KEY
+ALGORITHM = env.ALGORITHM
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 
 class AuthenticationManagement:
     DATABASE_PATH = f"{ROOT_DIR}/../databases/authentication/authentication.db"
@@ -13,63 +22,40 @@ class AuthenticationManagement:
             self.database_connection = sqlite3.connect(self.DATABASE_PATH)
         except sqlite3.Error as e:
             print(e)
-    
+
     def __del__(self):
         if self.database_connection:
             self.database_connection.close()
-    
+
     def create_user(self, email, password):
         cursor = self.database_connection.cursor()
-        cursor.execute("INSERT INTO users (email, password) VALUES (?, ?)", (email, password))
+        cursor.execute("INSERT INTO users (email, password) VALUES (?, ?)", (email, self.get_password_hash(password)))
         self.database_connection.commit()
         cursor.close()
-    
-    def get_user(self, email):
+
+    def check_user_exists(self, email):
         cursor = self.database_connection.cursor()
         cursor.execute("SELECT * FROM users WHERE email=?", (email,))
         user = cursor.fetchone()
         cursor.close()
-        return user
-    
-    def get_user_by_id(self, user_id):
-        cursor = self.database_connection.cursor()
-        cursor.execute("SELECT * FROM users WHERE id=?", (user_id,))
-        user = cursor.fetchone()
-        cursor.close()
-        return user
-    
-    def get_user_by_token(self, token):
-        cursor = self.database_connection.cursor()
-        cursor.execute("SELECT * FROM users WHERE token=?", (token,))
-        user = cursor.fetchone()
-        cursor.close()
-        return user
-    
-    def check_user_exists(self, email, password):
-        cursor = self.database_connection.cursor()
-        cursor.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password,))
-        user = cursor.fetchone()
-        cursor.close()
         return user is not None
-    
-    def verify_user_token(self, token):
-        self.update_tokens()
-        cursor = self.database_connection.cursor()
-        cursor.execute("SELECT * FROM authentication_tokens WHERE token=?", (token,))
-        user = cursor.fetchone()
-        cursor.close()
-        return user is not None
-    
-    def update_tokens(self):
-        cursor = self.database_connection.cursor()
-        cursor.execute("INSERT INTO authentication_tokens (token, user_id, expiration_date) VALUES (?, ?, ?)", ("token", 1, "2021-01-01 00:00:00"))
-        self.database_connection.commit()
-        cursor.execute("DELETE FROM authentication_tokens (token, user_id, expiration_date) WHERE token=?", ("token",))
-        self.database_connection.commit()
-        cursor.close()
-    
-    def create_token(self, user_id, token, expiration_date):
-        cursor = self.database_connection.cursor()
-        cursor.execute("INSERT INTO authentication_tokens (token, user_id, expiration_date) VALUES (?, ?, ?)", (token, user_id, expiration_date))
-        self.database_connection.commit()
-        cursor.close()
+
+    def get_password_hash(self, password: str):
+        return pwd_context.hash(password)
+
+    def create_access_token(self, data: dict, expires_delta: Union[timedelta, None] = None):
+        to_encode = data.copy()
+        if expires_delta:
+            expire = datetime.utcnow() + expires_delta
+        else:
+            expire = datetime.utcnow() + timedelta(minutes=15)
+        to_encode.update({"exp": expire})
+        encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+        return encoded_jwt
+
+    def decode_token(self, token: str):
+        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+    def create_access_token_expires(self, email: str):
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        return self.create_access_token(data={"email": email}, expires_delta=access_token_expires)
