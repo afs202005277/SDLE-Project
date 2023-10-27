@@ -59,8 +59,6 @@ class ShoppingLists{
             const list = cache !== '' ? JSON.parse(cache) : []
             const quantity = list.reduce((acc,val) => acc + val.quantity, 0)
 
-            console.log(list)
-
             const li = document.createElement('li');
             li.classList = 'px-3 w-100 d-flex justify-content-between align-items-center'
             li.innerHTML = `
@@ -157,7 +155,14 @@ class ShoppingList{
     rename(item, newName){
         if(newName == '') return
 
-        this.modify(() => { item.name = newName; })
+        if(this.items.map(i => i.name).includes(newName)){
+            this.modify(() => { 
+                this.items.filter(i => i.name == newName)[0].quantity += item.quantity; 
+                this.items = this.items.filter(i => i.name != item.name)
+            })
+        }
+        else
+            this.modify(() => { item.name = newName; })
     }
 
     render() {
