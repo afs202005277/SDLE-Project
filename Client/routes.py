@@ -19,7 +19,7 @@ def login_token_request(email, password):
     }
 
     data = {
-        "username": email,
+        "email": email,
         "password": password,
     }
 
@@ -156,30 +156,40 @@ def login_post():
     email = request.form.get('email')
     password = request.form.get('password')
 
-    response = login_token_request(email, password)
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5569")
+    data = {"type": "Login", "email": email, "password": password}
+    socket.send_json(data)
+    response = socket.recv_json()
 
-    if response.status_code == 200:
-        session['token'] = response.json()["access_token"]
-        return redirect('/home')
-    elif response.status_code == 401:
-        return render_template('login.html', error_message="Wrong Username or Password")
-    else:
-        print("Request failed with status code:", response.status_code)
-        return render_template('login.html', error_message="An error occured")
+    if "error" in response:
+        return render_template('login.html', error_message=response["error"])
+
+    session['token'] = response["token"]
+    return redirect('/home')
 
 
 @bp.route('/register', methods=['POST'])
 def register_post():
-    username = request.form.get('user')
+    print(request.form)
     email = request.form.get('email')
     password = request.form.get('password')
 
-    if not create_user(username, email, password):
-        return render_template('register.html', error_message="An error occured")
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5569")
+    data = {"type": "Register", "email": email, "password": password}
+    print(data)
+    socket.send_json(data)
+    response = socket.recv_json()
 
-    response = login_token_request(email, password)
-    if response.status_code == 200:
-        session['token'] = response.json()["access_token"]
-        return redirect('/home')
-    else:
-        return render_template('register.html', error_message="An error occured")
+    if "error" in response:
+        return render_template('register.html', error_message=response["error"])
+
+    data.update({"type": "Login"})
+    socket.send_json(data)
+    response = socket.recv_json()
+
+    session['token'] = response["token"]
+    return redirect('/home')
