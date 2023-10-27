@@ -1,9 +1,8 @@
 import zmq
 import os
 import sys
-import hashlib
-import uuid
-import datetime
+
+from jwt import InvalidSignatureError
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -24,7 +23,7 @@ class Server:
         self.hashing_ring = HashingRing(num_primary_cons)
         self.request_handlers = {'AddItem': self.add_item, 'BuyItem': self.buy_item, 'CreateList': self.create_list,
                                  'DeleteList': self.delete_list, 'DeleteItem': self.delete_item,
-                                 'RenameItem': self.rename_item, 'Login': self.login}
+                                 'RenameItem': self.rename_item}
         self.db_forbidden_parameters = ['token', 'type']
 
     def remove_attributes(self, json_obj):
@@ -40,39 +39,7 @@ class Server:
             json_obj = [self.remove_attributes(item) for item in json_obj]
         return json_obj
 
-    def login(self, request):
-        email = request["email"]
-        password = request["password"]
-        password = hashlib.sha256(password.encode()).hexdigest()
-        if self.authentication_management.check_user_exists(email, password):
-            user_id = self.authentication_management.get_user(email)[0]
-            new_token = uuid.uuid4()
-            expiration_date = datetime.datetime.now() + datetime.timedelta(days=self.expiration_date_days)
-            self.authentication_management.create_token(user_id, new_token, expiration_date)
-            return {"token": str(new_token)}
-        else:
-            return {"error": "Invalid credentials"}
-
-    def register(self, request):
-        email = request["email"]
-        password = request["password"]
-        password = hashlib.sha256(password.encode()).hexdigest()
-        if not self.authentication_management.check_user_exists(email, password):
-            self.authentication_management.create_user(email, password)
-            return {"success": "User created"}
-        else:
-            return {"error": "User already exists"}
-
-    def is_authenticated(self, request):
-        token = request["token"]
-        if self.authentication_management.verify_user_token(token):
-            return True
-        else:
-            return False
-
     def add_item(self, request):
-        # if not self.is_authenticated(request):
-        #    return {"error": "Invalid token"}
         list_id = request["list_id"]
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
@@ -96,8 +63,6 @@ class Server:
         print(self.db_management.retrieve_list(main_database_id, list_id))
 
     def buy_item(self, request):
-        # if not self.is_authenticated(request):
-        #    return {"error": "Invalid token"}
         list_id = request["list_id"]
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
@@ -115,25 +80,19 @@ class Server:
         print(self.db_management.retrieve_list(main_database_id, list_id))
 
     def create_list(self, request):
-        # if not self.is_authenticated(request):
-        #    return {"error": "Invalid token"}
-        list_id = self.db_management.next_id
+        list_id = DatabaseManagement.get_id(request['name'], request['email'])
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         self.db_management.insert_list(main_database_id, request)
         print("Success!")
         print(self.db_management.retrieve_list(main_database_id, list_id))
 
     def delete_list(self, request):
-        # if not self.is_authenticated(request):
-        #    return {"error": "Invalid token"}
         main_database_id = self.hashing_ring.find_main_database_id(request["list_id"])
         self.db_management.delete_list(main_database_id, request["list_id"])
         print("Success!")
         print(self.db_management.retrieve_list(main_database_id, request["list_id"]))
 
     def delete_item(self, request):
-        # if not self.is_authenticated(request):
-        #    return {"error": "Invalid token"}
         list_id = request["list_id"]
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
@@ -151,8 +110,6 @@ class Server:
         print(self.db_management.retrieve_list(main_database_id, list_id))
 
     def rename_item(self, request):
-        # if not self.is_authenticated(request):
-        #    return {"error": "Invalid token"}
         list_id = request["list_id"]
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
@@ -180,6 +137,9 @@ class Server:
         print("Success!")
         print(self.db_management.retrieve_list(main_database_id, list_id))
 
+    def get_user_email(self, token):
+        return self.authentication_management.decode_token(token)
+
     def run(self):
         context = zmq.Context()
         socket = context.socket(zmq.REP)
@@ -187,6 +147,17 @@ class Server:
 
         while True:
             request = socket.recv_json()
+            response = None
+            try:
+                payload = self.get_user_email(request['token'])
+            except KeyError:
+                response = {'error': 'No token provided.'}
+            except InvalidSignatureError:
+                response = {'error': 'Invalid token provided.'}
+            if response is not None:
+                socket.send_json(response)
+                continue
+            request['email'] = payload['email']
             response = self.request_handlers[request['type']](self.remove_attributes(request))
             socket.send_json(response)
 

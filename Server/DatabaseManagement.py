@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import berkeleydb.db as bdb
@@ -10,10 +11,15 @@ class DatabaseManagement:
 
     def __init__(self):
         self.database_connections = self.__initialize_databases()
-        self.next_id = self.__get_highest_id_across_databases()
+
+    @staticmethod
+    def get_id(list_name, user_email):
+        sha256 = hashlib.sha256()
+        sha256.update((list_name+user_email).encode('utf-8'))
+        return sha256.hexdigest()
 
     def replace_list(self, main_database_id, list_object):
-        self.__insert_list(main_database_id, list_object, list_object["id"])
+        self.__insert_list(main_database_id, list_object)
 
     def insert_list(self, main_database_id, list_object):
         self.__insert_list(main_database_id, list_object)
@@ -35,24 +41,6 @@ class DatabaseManagement:
     def get_num_connections(self):
         return len(self.database_connections)
 
-    def __get_highest_id_across_databases(self):
-        highest_id = 1
-
-        for database in self.database_connections:
-            cursor = database.cursor()
-            record = cursor.last()
-            if record is not None:
-                id_in_bytes, _ = record
-                current_id = int(id_in_bytes.decode('utf-8'))
-                highest_id = max(highest_id, current_id)
-
-        return highest_id
-
-    def __get_id(self):
-        res = str(self.next_id)
-        self.next_id += 1
-        return res
-
     def __initialize_databases(self):
         # Create connections to the databases inside the "databases" folder
         database_connections = []
@@ -65,13 +53,9 @@ class DatabaseManagement:
         return database_connections
 
     # saves in all 3 databases of the folder
-    def __insert_list(self, main_database_id, list_object, id_to_use=None):
+    def __insert_list(self, main_database_id, list_object):
         database = self.database_connections[main_database_id]
-        if id_to_use is None:
-            id_to_use = self.__get_id()
-        list_object["id"] = id_to_use
-        id_to_use = str(id_to_use)
-        database.put(id_to_use.encode('utf-8'), json.dumps(list_object).encode('utf-8'))
+        database.put(list_object['id'].encode('utf-8'), json.dumps(list_object).encode('utf-8'))
         database.sync()
 
     def __retrieve_list(self, main_database_id, list_id):

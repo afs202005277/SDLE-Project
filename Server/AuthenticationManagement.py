@@ -12,6 +12,7 @@ SECRET_KEY = env.SECRET_KEY
 ALGORITHM = env.ALGORITHM
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+
 class AuthenticationManagement:
     DATABASE_PATH = f"{ROOT_DIR}/../databases/authentication/authentication.db"
 
@@ -21,7 +22,7 @@ class AuthenticationManagement:
             self.database_connection = sqlite3.connect(self.DATABASE_PATH)
         except sqlite3.Error as e:
             print(e)
-    
+
     def __del__(self):
         if self.database_connection:
             self.database_connection.close()
@@ -31,14 +32,13 @@ class AuthenticationManagement:
         cursor.execute("INSERT INTO users (email, password) VALUES (?, ?)", (email, self.get_password_hash(password)))
         self.database_connection.commit()
         cursor.close()
-    
+
     def check_user_exists(self, email):
         cursor = self.database_connection.cursor()
         cursor.execute("SELECT * FROM users WHERE email=?", (email,))
         user = cursor.fetchone()
         cursor.close()
         return user is not None
-
 
     def get_password_hash(self, password: str):
         return pwd_context.hash(password)
@@ -53,10 +53,9 @@ class AuthenticationManagement:
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
-
     def decode_token(self, token: str):
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    
+
     def create_access_token_expires(self, email: str):
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         return self.create_access_token(data={"email": email}, expires_delta=access_token_expires)
