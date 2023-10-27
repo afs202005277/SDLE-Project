@@ -7,6 +7,17 @@ function createItem(name, quantity){
     }
 }
 
+function postReq(url, data) {
+
+    fetch(url, {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+    })
+}
+
 /**
  * 
  * CLASS SHOPPING LISTS
@@ -43,6 +54,9 @@ class ShoppingLists{
     delete(item, index){
         this.lists.splice(index, 1);
         localStorage.removeItem(item)
+        const url = 'http://localhost:5000/req/removeList';
+        const data = { list_name: item};
+        postReq(url, data)
         
         if(activeList.getHash() == item)
             activeList = new ShoppingList(this.getFirst())
@@ -96,6 +110,9 @@ addListForm.addEventListener('submit', e => {
     const input = document.getElementById('list');
     const newList = input.value.trim();
     if(newList !== ''){
+        const url = 'http://localhost:5000/req/createList';
+        const data = { list_name: newList };
+        postReq(url, data)
         lists.create(newList)
         input.value = ''
     }
@@ -149,11 +166,18 @@ class ShoppingList{
     }
 
     delete(index) {
+        const url = 'http://localhost:5000/req/removeItem';
+        const data = { list_name: activeList.getHash(), name: this.items[index].name};
+        postReq(url, data)
         this.modify(() => { this.items.splice(index, 1); })
     }
 
     rename(item, newName){
         if(newName == '') return
+
+        const url = 'http://localhost:5000/req/renameItem';
+        const data = { list_name: activeList.getHash(), item_name: item.name, new_item_name: newName };
+        postReq(url, data)
 
         if(this.items.map(i => i.name).includes(newName)){
             this.modify(() => { 
@@ -224,6 +248,9 @@ addItemForm.addEventListener('submit', e => {
     else quantity = parseInt(quantity)
 
     if (newItem !== '') {
+        const url = 'http://localhost:5000/req/addToList';
+        const data = { list_name: activeList.getHash(), item_name: newItem, quantity: quantity };
+        postReq(url, data)
         activeList.add(newItem, quantity);
         itemInput.value = '';
     }

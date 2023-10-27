@@ -26,6 +26,7 @@ class HashingRing:
     def find_main_database_id(self, request_id_hash):
         smallest_greater = None
         database_identifier = None
+        request_id_hash = int(request_id_hash, 16)
 
         for identifier, values in self.nodes_positions.items():
             for value in values:

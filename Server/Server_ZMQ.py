@@ -40,7 +40,7 @@ class Server:
         return json_obj
 
     def add_item(self, request):
-        list_id = request["list_id"]
+        list_id = DatabaseManagement.get_id(request['list_name'], request['email'])
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
         if not list_object:
@@ -63,7 +63,7 @@ class Server:
         print(self.db_management.retrieve_list(main_database_id, list_id))
 
     def buy_item(self, request):
-        list_id = request["list_id"]
+        list_id = DatabaseManagement.get_id(request['name'], request['email'])
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
         if not list_object:
@@ -80,20 +80,22 @@ class Server:
         print(self.db_management.retrieve_list(main_database_id, list_id))
 
     def create_list(self, request):
-        list_id = DatabaseManagement.get_id(request['name'], request['email'])
+        list_id = DatabaseManagement.get_id(request['list_name'], request['email'])
+        request["id"] = list_id
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         self.db_management.insert_list(main_database_id, request)
         print("Success!")
         print(self.db_management.retrieve_list(main_database_id, list_id))
 
     def delete_list(self, request):
-        main_database_id = self.hashing_ring.find_main_database_id(request["list_id"])
-        self.db_management.delete_list(main_database_id, request["list_id"])
+        list_id = DatabaseManagement.get_id(request['list_name'], request['email'])
+        main_database_id = self.hashing_ring.find_main_database_id(list_id)
+        self.db_management.delete_list(main_database_id, list_id)
         print("Success!")
-        print(self.db_management.retrieve_list(main_database_id, request["list_id"]))
+        print(self.db_management.retrieve_list(main_database_id, list_id))
 
     def delete_item(self, request):
-        list_id = request["list_id"]
+        list_id = DatabaseManagement.get_id(request['list_name'], request['email'])
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
         if not list_object:
@@ -110,7 +112,7 @@ class Server:
         print(self.db_management.retrieve_list(main_database_id, list_id))
 
     def rename_item(self, request):
-        list_id = request["list_id"]
+        list_id = DatabaseManagement.get_id(request['list_name'], request['email'])
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
         if not list_object:
