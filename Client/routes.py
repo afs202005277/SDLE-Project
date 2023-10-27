@@ -55,7 +55,7 @@ bp = Blueprint('api', __name__)
 
 @bp.route('/')
 def redirect_index():
-    return redirect('/test')
+    return if_token(redirect('/offline'), render_template('offline.html'))
 
 
 @bp.route('/test')
