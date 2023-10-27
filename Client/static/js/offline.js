@@ -149,8 +149,12 @@ class ShoppingList{
             this.modify(() => { this.items.push(createItem(item, quantity)); })
     }
 
-    delete(index) {
-        this.modify(() => { this.items.splice(index, 1); })
+    delete(index, quantity) {
+        if(quantity < 1) return
+        else if(quantity < this.items[index].quantity)
+            this.modify(() => { this.items[index].quantity -= quantity })
+        else
+            this.modify(() => { this.items.splice(index, 1); })
     }
 
     rename(item, newName){
@@ -188,11 +192,12 @@ class ShoppingList{
             `
 
             li.querySelector('button.delete').addEventListener('click', () => {
+                document.querySelector('#deleteModal #quantity').value = item.quantity
                 let action = deleteModal.querySelector('.modal-action')
                 action.outerHTML = action.outerHTML; // reset listeners
                 action = deleteModal.querySelector('.modal-action')
                 action.addEventListener('click', () => {
-                    this.delete(index);
+                    this.delete(index, document.querySelector('#deleteModal #quantity').value);
                 })
             })
 
