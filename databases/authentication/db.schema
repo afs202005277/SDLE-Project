@@ -1,0 +1,19 @@
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL
+);
+
+CREATE TABLE authentication_tokens (
+    token TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    expiration_date TIMESTAMP NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TRIGGER delete_expired_tokens
+AFTER INSERT ON authentication_tokens
+BEGIN
+    DELETE FROM authentication_tokens
+    WHERE expiration_date < datetime('now');
+END;
