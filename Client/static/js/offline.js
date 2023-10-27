@@ -68,11 +68,12 @@ class ShoppingLists{
                     <i class="fa-solid fa-delete-left"></i>
                 </div>
             `
-            li.addEventListener('click', () => {
+            li.querySelector('span').addEventListener('click', () => {
                 activeList = new ShoppingList(item)
             });
 
-            li.querySelector('i').addEventListener('click', () => {
+            li.querySelector('i').addEventListener('click', e => {
+                e.preventDefault()
                 this.delete(item, index);
             });
 
@@ -153,7 +154,7 @@ class ShoppingList{
     }
 
     rename(item, newName){
-        if(newName == '') return
+        if(newName == '' || item.name == newName) return
 
         if(this.items.map(i => i.name).includes(newName)){
             this.modify(() => { 
