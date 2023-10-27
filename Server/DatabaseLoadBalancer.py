@@ -18,9 +18,9 @@ class DatabaseLoadBalancer:
 if __name__ == '__main__':
     from DatabaseManagement import DatabaseManagement
     database_management = DatabaseManagement()
-    load_balancer = DatabaseLoadBalancer(database_management.get_num_primary_connections(),
+    load_balancer = DatabaseLoadBalancer(database_management.get_num_connections(),
                                          database_management.get_num_replicas_connections())
-    hashing_ring = HashingRing(database_management.get_num_primary_connections())
+    hashing_ring = HashingRing(database_management.get_num_connections())
 
     results = dict()
     for main_connection, db_list in database_management.get_num_replicas_connections().items():

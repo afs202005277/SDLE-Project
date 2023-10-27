@@ -7,7 +7,7 @@ class HashingRing:
     def __init__(self, num_databases):
         self.nodes_positions = dict()
         self.num_databases = num_databases
-        random.seed(120)  # best seed to balanced loads
+        random.seed(100)  # best seed to balanced loads
         self.divide_hash_ring_into_segments()
 
     @staticmethod
@@ -47,8 +47,8 @@ class HashingRing:
 if __name__ == '__main__':
     from DatabaseManagement import DatabaseManagement
     database_management = DatabaseManagement()
-    hashing_ring = HashingRing(database_management.get_num_primary_connections())
-    results = dict((x, 0) for x in range(database_management.get_num_primary_connections()))
+    hashing_ring = HashingRing(database_management.get_num_connections())
+    results = dict((x, 0) for x in range(database_management.get_num_connections()))
     for i in range(10000):
         results[hashing_ring.find_main_database_id(HashingRing.compute_md5_hash(i))] += 1
     print(results)
