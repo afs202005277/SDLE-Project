@@ -55,7 +55,7 @@ bp = Blueprint('api', __name__)
 
 @bp.route('/')
 def redirect_index():
-    return redirect('/test')
+    return if_token(redirect('/offline'), render_template('offline.html'))
 
 
 @bp.route('/test')
@@ -94,7 +94,7 @@ def create_list():
     data = {"type": "CreateList", "token": "", "name": "Lista de Teste",
             "items": [{"name": "peaches", "quantity": 3}, {"name": "pencils", "quantity": 1}]}
     socket.send_json(data)
-    sleep(1)
+    
     return redirect('/test')
 
 
@@ -103,9 +103,13 @@ def add_to_list():
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
+
+    list_name = request.form['list']
+
+    print(list_name)
     data = {"type": "AddItem", "token": "", "name": "bananas", "quantity": 6, "list_id": 1}
     socket.send_json(data)
-    sleep(1)
+    
     return redirect('/test')
 
 
@@ -116,7 +120,7 @@ def remove_list():
     socket.connect("tcp://localhost:5559")
     data = {"type": "DeleteList", "token": "", "list_id": 1}
     socket.send_json(data)
-    sleep(1)
+    
     return redirect('/test')
 
 @bp.route('/test/removeItem', methods=['POST'])
@@ -126,7 +130,7 @@ def remove_item():
     socket.connect("tcp://localhost:5559")
     data = {"type": "DeleteItem", "token": "", "name": "bananas", "list_id": 1}
     socket.send_json(data)
-    sleep(1)
+    
     return redirect('/test')
 
 @bp.route('/test/renameItem', methods=['POST'])
@@ -136,7 +140,7 @@ def rename_item():
     socket.connect("tcp://localhost:5559")
     data = {"type": "RenameItem", "token": "", "name": "bananas", "newName": "apples", "list_id": 1}
     socket.send_json(data)
-    sleep(1)
+    
     return redirect('/test')
 
 
@@ -147,7 +151,7 @@ def buy_item():
     socket.connect("tcp://localhost:5559")
     data = {"type": "BuyItem", "token": "", "name": "bananas", "list_id": 1}
     socket.send_json(data)
-    sleep(1)
+    
     return redirect('/test')
 
 
