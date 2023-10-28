@@ -14,9 +14,9 @@ class DatabaseManagement:
 
     @staticmethod
     def get_id(list_name, user_email):
-        sha256 = hashlib.sha256()
-        sha256.update((list_name+user_email).encode('utf-8'))
-        return sha256.hexdigest()
+        md5 = hashlib.md5()
+        md5.update((list_name+user_email).encode('utf-8'))
+        return md5.hexdigest()
 
     def replace_list(self, main_database_id, list_object):
         self.__insert_list(main_database_id, list_object)

@@ -7,6 +7,16 @@ function createItem(name, quantity){
     }
 }
 
+function postReq(url, data) {
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+}
+
 /**
  * 
  * CLASS SHOPPING LISTS
@@ -43,6 +53,11 @@ class ShoppingLists{
     delete(item, index){
         this.lists.splice(index, 1);
         localStorage.removeItem(item)
+
+        postReq(
+            'http://localhost:5000/req/removeList',
+            { list_name: item }
+        )
         
         if(activeList.getHash() == item)
             activeList = new ShoppingList(this.getFirst())
@@ -68,11 +83,12 @@ class ShoppingLists{
                     <i class="fa-solid fa-delete-left"></i>
                 </div>
             `
-            li.addEventListener('click', () => {
+            li.querySelector('span').addEventListener('click', () => {
                 activeList = new ShoppingList(item)
             });
 
-            li.querySelector('i').addEventListener('click', () => {
+            li.querySelector('i').addEventListener('click', e => {
+                e.preventDefault()
                 this.delete(item, index);
             });
 
@@ -96,6 +112,11 @@ addListForm.addEventListener('submit', e => {
     const input = document.getElementById('list');
     const newList = input.value.trim();
     if(newList !== ''){
+        postReq(
+            'http://localhost:5000/req/createList', 
+            { list_name: newList }
+        )
+
         lists.create(newList)
         input.value = ''
     }
@@ -148,12 +169,26 @@ class ShoppingList{
             this.modify(() => { this.items.push(createItem(item, quantity)); })
     }
 
-    delete(index) {
-        this.modify(() => { this.items.splice(index, 1); })
+    delete(index, quantity) {
+        postReq(
+            'http://localhost:5000/req/removeItem',
+            { list_name: activeList.getHash(), name: this.items[index].name}
+        )
+        
+        if(quantity < 1) return
+        else if(quantity < this.items[index].quantity)
+            this.modify(() => { this.items[index].quantity -= quantity })
+        else
+            this.modify(() => { this.items.splice(index, 1); })
     }
 
     rename(item, newName){
-        if(newName == '') return
+        if(newName == '' || item.name == newName) return
+
+        postReq(
+            'http://localhost:5000/req/renameItem', 
+            { list_name: activeList.getHash(), item_name: item.name, new_item_name: newName }
+        )
 
         if(this.items.map(i => i.name).includes(newName)){
             this.modify(() => { 
@@ -187,11 +222,12 @@ class ShoppingList{
             `
 
             li.querySelector('button.delete').addEventListener('click', () => {
+                document.querySelector('#deleteModal #quantity').value = item.quantity
                 let action = deleteModal.querySelector('.modal-action')
                 action.outerHTML = action.outerHTML; // reset listeners
                 action = deleteModal.querySelector('.modal-action')
                 action.addEventListener('click', () => {
-                    this.delete(index);
+                    this.delete(index, document.querySelector('#deleteModal #quantity').value);
                 })
             })
 
@@ -224,6 +260,11 @@ addItemForm.addEventListener('submit', e => {
     else quantity = parseInt(quantity)
 
     if (newItem !== '') {
+        postReq(
+            'http://localhost:5000/req/addToList', 
+            { list_name: activeList.getHash(), item_name: newItem, quantity: quantity }
+        )
+
         activeList.add(newItem, quantity);
         itemInput.value = '';
     }
