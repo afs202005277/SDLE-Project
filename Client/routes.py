@@ -1,7 +1,9 @@
 from flask import Blueprint, render_template, redirect, request, session
 import requests
-from time import sleep
 import zmq
+import json
+import hashlib
+from time import sleep
 
 
 def if_token(return_good, return_bad):
@@ -144,6 +146,17 @@ def buy_item():
     data = {"type": "BuyItem", "token": session['token'], "name": "bananas", "list_id": 1}
     socket.send_json(data)  
     return ''
+
+
+@bp.route('/req/cloudHash/<list_hash>')
+def cloud_hash(list_hash):
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5559")
+    data = {"type": "GetListHash", "token": session['token'], "list_name": list_hash}
+    socket.send_json(data)  
+    sleep(1)
+    return socket.recv_json(flags=zmq.NOBLOCK)
 
 
 @bp.route('/login', methods=['POST'])

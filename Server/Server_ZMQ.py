@@ -1,6 +1,8 @@
 import zmq
 import os
 import sys
+import json
+import hashlib
 
 from jwt import InvalidSignatureError
 
@@ -21,9 +23,15 @@ class Server:
         self.authentication_management = AuthenticationManagement()
         num_primary_cons = self.db_management.get_num_connections()
         self.hashing_ring = HashingRing(num_primary_cons)
-        self.request_handlers = {'AddItem': self.add_item, 'BuyItem': self.buy_item, 'CreateList': self.create_list,
-                                 'DeleteList': self.delete_list, 'DeleteItem': self.delete_item,
-                                 'RenameItem': self.rename_item}
+        self.request_handlers = {
+            'AddItem': self.add_item, 
+            'BuyItem': self.buy_item, 
+            'CreateList': self.create_list,
+            'DeleteList': self.delete_list, 
+            'DeleteItem': self.delete_item,
+            'RenameItem': self.rename_item,
+            'GetListHash': self.get_list_hash
+        }
         self.db_forbidden_parameters = ['token', 'type']
 
     def remove_attributes(self, json_obj):
@@ -38,6 +46,19 @@ class Server:
             # Remove attributes from list items (recursively)
             json_obj = [self.remove_attributes(item) for item in json_obj]
         return json_obj
+
+    def get_list_hash(self, request):
+        list_id = DatabaseManagement.get_id(request['list_name'], request['email'])
+        main_database_id = self.hashing_ring.find_main_database_id(list_id)
+        list_object = self.db_management.retrieve_list(main_database_id, list_id)
+        if not list_object:
+            print("List not Found")
+            return
+        del list_object['id']
+        del list_object['email']
+
+        list_str = json.dumps(list_object).replace(' ', '').replace('\"', '').encode('utf-8')
+        return hashlib.md5(list_str).hexdigest()
 
     def add_item(self, request):
         list_id = DatabaseManagement.get_id(request['list_name'], request['email'])
