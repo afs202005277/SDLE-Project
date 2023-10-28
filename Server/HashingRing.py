@@ -23,6 +23,12 @@ class HashingRing:
 
         return self.nodes_positions
 
+    def get_main_nodes_positions(self):
+        res = []
+        for db_id, positions_list in self.nodes_positions.items():
+            res.append((db_id, positions_list[0]))
+        return sorted(res, key=lambda x: x[1])
+
     def find_main_database_id(self, request_id_hash):
         smallest_greater = None
         database_identifier = None
@@ -48,6 +54,7 @@ if __name__ == '__main__':
     from DatabaseManagement import DatabaseManagement
     database_management = DatabaseManagement()
     hashing_ring = HashingRing(database_management.get_num_connections())
+    print(hashing_ring.get_main_nodes_positions())
     results = dict((x, 0) for x in range(database_management.get_num_connections()))
     for i in range(10000):
         results[hashing_ring.find_main_database_id(HashingRing.compute_md5_hash(i))] += 1
