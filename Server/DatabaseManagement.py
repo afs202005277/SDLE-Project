@@ -70,8 +70,8 @@ class DatabaseManagement:
         txn = self.__begin_transaction()
         database = self.database_connections[main_database_id]
         database.put(list_object['id'].encode('utf-8'), json.dumps(list_object).encode('utf-8'), txn=txn)
-        database.sync()
         txn.commit()
+
 
     def __retrieve_list(self, main_database_id, list_id):
         list_id = str(list_id)
@@ -104,6 +104,15 @@ class DatabaseManagement:
         return env
 
 
+def search_list(manager, list_id, hexadecimal):
+    list_id = int(list_id, 16 if hexadecimal else 10)
+    for i in range(manager.get_num_connections()):
+        res = manager.retrieve_list(i, list_id)
+        if len(res) > 0:
+            return res
+    return "Not found"
+
+
 if __name__ == '__main__':
     db_manager = DatabaseManagement()
 
@@ -114,20 +123,16 @@ if __name__ == '__main__':
     }
 
     db_manager.insert_list(0, data)
-
     data = {
         "id": "2",
         "name": "Object 1",
         "items": [{"name": "Item 2", "quantity": 2}]
     }
-
     db_manager.insert_list(1, data)
 
-    obj = db_manager.retrieve_list(0, "30")
-    print(obj)
-    obj = db_manager.retrieve_list(1, "2")
-    print(obj)
-    obj = db_manager.retrieve_list(0, "2")
-    print(obj)
+    new_db_manager = DatabaseManagement()
+    print(search_list(new_db_manager, '30', False))
+    print(search_list(new_db_manager, '2', False))
 
     db_manager.close_databases()
+    new_db_manager.close_databases()
