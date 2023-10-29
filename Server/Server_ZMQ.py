@@ -30,7 +30,8 @@ class Server:
             'DeleteList': self.delete_list, 
             'DeleteItem': self.delete_item,
             'RenameItem': self.rename_item,
-            'GetListHash': self.get_list_hash
+            'GetListHash': self.get_list_hash,
+            'Synchronize': self.synchronize
         }
         self.db_forbidden_parameters = ['token', 'type']
 
@@ -53,12 +54,22 @@ class Server:
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
         if not list_object:
             print("List not Found")
-            return
+            return ''
         del list_object['id']
         del list_object['email']
 
         list_str = json.dumps(list_object).replace(' ', '').replace('\"', '').encode('utf-8')
         return hashlib.md5(list_str).hexdigest()
+
+    def synchronize(self, request):
+        print('sync request')
+        # Fetch list from database
+
+        # Parse changelog sent by client in request
+        # Apply changes in the list of the cloud
+
+        # Send client the sync. list (override existing in client)
+        return ''
 
     def add_item(self, request):
         list_id = DatabaseManagement.get_id(request['list_name'], request['email'])

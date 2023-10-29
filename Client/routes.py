@@ -159,6 +159,17 @@ def cloud_hash(list_hash):
     return socket.recv_json(flags=zmq.NOBLOCK)
 
 
+@bp.route('/req/synchronize/<list_hash>', methods=['POST'])
+def synchronize(list_hash):
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5559")
+    data = {"type": "Synchronize", "token": session['token'], "list_name": list_hash}
+    socket.send_json(data)  
+    sleep(1)
+    return socket.recv_json(flags=zmq.NOBLOCK)
+
+
 @bp.route('/login', methods=['POST'])
 def login_post():
     email = request.form.get('email')

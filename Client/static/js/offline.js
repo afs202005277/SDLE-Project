@@ -33,7 +33,10 @@ async function cloudSync() {
     if(localHash == cloudHash)
         console.log('shopping list is syncronized.')
     else
-        console.log('needs cloud sync.')
+        postReq(
+            `http://localhost:5000/req/synchronize/${activeList.getHash()}`,
+            activeList.changes
+        )
 }
 
 setInterval(() => { cloudSync() }, 5000);
@@ -156,6 +159,7 @@ class ShoppingList{
         } else{
             this.hash = hash
             this.items = this.load();
+            this.changes = this.changelog();
             this.render();
         }
     }
@@ -167,6 +171,16 @@ class ShoppingList{
     load(){
         const list = localStorage.getItem(this.hash);
         return list ? JSON.parse(list) : [];
+    }
+
+    changelog(){
+        const cl = localStorage.getItem(`changelog_${this.hash}`)
+        return cl ? JSON.parse(cl) : [];
+    }
+
+    log(info){
+        this.changes.push(info)
+        localStorage.setItem(`changelog_${this.hash}`, JSON.stringify(this.changes));
     }
 
     save() {
@@ -181,13 +195,17 @@ class ShoppingList{
     }
 
     add(item, quantity) {
-        if(this.items.map(i => i.name).includes(item))
+        if(this.items.map(i => i.name).includes(item)){
             this.modify(() => { 
                 this.items.filter(i => i.name == item)[0].quantity += quantity; 
                 this.items = this.items.filter(i => i.quantity > 0)
             })
-        else if(quantity > 0)
+            this.log({'operation': 'add', 'item': item, 'quantity': quantity})
+        }
+        else if(quantity > 0){
             this.modify(() => { this.items.push(createItem(item, quantity)); })
+            this.log({'operation': 'add', 'item': item, 'quantity': quantity})
+        }
     }
 
     delete(index, quantity) {
