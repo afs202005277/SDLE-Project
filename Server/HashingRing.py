@@ -53,6 +53,7 @@ class HashingRing:
 
 if __name__ == '__main__':
     from DatabaseManagement import DatabaseManagement
+
     database_management = DatabaseManagement()
     hashing_ring = HashingRing(database_management.get_num_connections())
     print(hashing_ring.get_main_nodes_positions())

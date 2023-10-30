@@ -12,5 +12,9 @@ cd Server && python3 Server_ZMQ.py &
 backend_pid=$!
 echo "$backend_pid" >> process_pids.txt
 
+cd Server && python3 AuthenticationServer.py &
+auth_pid=$!
+echo "$auth_pid" >> process_pids.txt
+
 wait
 

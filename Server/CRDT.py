@@ -44,11 +44,12 @@ cl2 = {
     ]
 }
 
+
 class CRDT:
     def __init__(self, state):
         self.state = state
         self.changelogs = []
-    
+
     def changelog(self, log):
         self.changelogs.append(log)
 
@@ -65,7 +66,7 @@ class CRDT:
 
             elif (operation == 'remove') and (len(existingItem) > 0):
                 if entry['quantity'] >= existingItem[0]['quantity']:
-                    self.state['items'] = list(filter(lambda x : x != existingItem[0], self.state['items']))
+                    self.state['items'] = list(filter(lambda x: x != existingItem[0], self.state['items']))
                 else:
                     existingItem[0]['quantity'] -= entry['quantity']
 
@@ -78,7 +79,7 @@ class CRDT:
         for log in self.changelogs:
             other.changelog(log)
 
-    
+
 if __name__ == '__main__':
     print(f'START LIST (LAST SYNC. FROM CLOUD)\n{last_sync_list}\n')
 
