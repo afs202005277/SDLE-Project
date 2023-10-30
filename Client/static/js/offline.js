@@ -210,8 +210,8 @@ class ShoppingList{
 
     delete(index, quantity) {
         postReq(
-            'http://localhost:5000/req/removeItem',
-            { list_name: activeList.getHash(), name: this.items[index].name}
+            'http://localhost:5000/req/buyItem',
+            { list_name: activeList.getHash(), name: this.items[index].name, quantity:quantity}
         )
         
         if(quantity < 1) return

@@ -95,7 +95,7 @@ class Server:
         print(self.db_management.retrieve_list(main_database_id, list_id))
 
     def buy_item(self, request):
-        list_id = DatabaseManagement.get_id(request['name'], request['email'])
+        list_id = DatabaseManagement.get_id(request['list_name'], request['email'])
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
         if not list_object:
@@ -104,7 +104,9 @@ class Server:
         items = list_object['items']
         for item in items:
             if item['name'] == request['name']:
-                item['quantity'] -= 1
+                item['quantity'] -= int(request['quantity'])
+            if item['quantity'] <= 0:
+                items.remove(item)
 
         list_object['items'] = items
         self.db_management.replace_list(main_database_id, list_object)

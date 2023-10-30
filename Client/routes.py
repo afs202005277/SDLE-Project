@@ -140,11 +140,12 @@ def rename_item():
 
 @bp.route('/req/buyItem', methods=['POST'])
 def buy_item():
+    data = request.get_json()
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
-    data = {"type": "BuyItem", "token": session['token'], "name": "bananas", "list_id": 1}
-    socket.send_json(data)  
+    data = {"type": "BuyItem", "token": session['token'], "name": data.get('name'), "list_name": data.get('list_name'), "quantity": data.get('quantity')}
+    socket.send_json(data) 
     return ''
 
 
