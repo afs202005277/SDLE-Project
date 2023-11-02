@@ -255,7 +255,7 @@ class ShoppingList{
                 <span>${item.name}</span>
                 <div class="d-flex gap-2 align-items-center">
                     <span class="badge bg-primary rounded-pill">${item.quantity}</span>
-                    <button type="button" class="btn delete" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="fa-solid fa-delete-left"></i></button>
+                    <button type="button" class="btn delete" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="fa-solid fa-cart-shopping"></i></button>
                     <button type="button" class="btn rename" data-bs-toggle="modal" data-bs-target="#renameModal"><i class="fa-solid fa-font"></i></button>
                 </div>
             `

@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import hashlib
+import time
 
 from jwt import InvalidSignatureError
 
@@ -88,7 +89,9 @@ class Server:
 
         if not found:
             items.append({'name': request['name'], 'quantity': request['quantity']})
-
+ 
+        log = {'timestamp': time.time(), 'operation': 'add', 'item': request['name'], 'quantity': request['quantity']}
+        list_object['changelog'].append(log)
         list_object['items'] = items
         self.db_management.replace_list(main_database_id, list_object)
         print("Success!")
@@ -108,6 +111,8 @@ class Server:
             if item['quantity'] <= 0:
                 items.remove(item)
 
+        log = {'timestamp': time.time(), 'operation': 'buy', 'item': request['name'], 'quantity': request['quantity']}
+        list_object['changelog'].append(log)
         list_object['items'] = items
         self.db_management.replace_list(main_database_id, list_object)
         print("Success!")
@@ -116,6 +121,7 @@ class Server:
     def create_list(self, request):
         list_id = DatabaseManagement.get_id(request['list_name'], request['email'])
         request["id"] = list_id
+        request['changelog'] = []
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         self.db_management.insert_list(main_database_id, request)
         print("Success!")
@@ -168,6 +174,9 @@ class Server:
                 break
         if not found:
             items.append(renamed)
+        
+        log = {'timestamp': time.time(), 'operation': 'rename', 'item': request['name'], 'newItem': request['newName']}
+        list_object['changelog'].append(log)
         list_object['items'] = items
         self.db_management.replace_list(main_database_id, list_object)
         print("Success!")
