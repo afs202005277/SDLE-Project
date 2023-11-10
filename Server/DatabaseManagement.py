@@ -73,12 +73,26 @@ class DatabaseManagement:
         txn.commit()
 
 
-    def __retrieve_list(self, main_database_id, list_id):
+    def __retrieve_list(self, database_id, list_id):
         list_id = str(list_id)
         # Retrieve a JSON data object from the specified database by ID
         txn = self.__begin_transaction()
-        database = self.database_connections[main_database_id]
+        database = self.database_connections[database_id]
         res = database.get(list_id.encode('utf-8'), None, txn=txn)
+        txn.commit()
+        if res is not None:
+            return res
+        return None
+
+    def print_all_lists(self):
+        for db_id in range(self.get_num_connections()):
+            print(f"DB {db_id}:")
+            print(self.__retrieve_lists(db_id))
+
+    def __retrieve_lists(self, main_database_id):
+        txn = self.__begin_transaction()
+        database = self.database_connections[main_database_id]
+        res = database.items()
         txn.commit()
         if res is not None:
             return res
@@ -103,6 +117,14 @@ class DatabaseManagement:
         env.open(self.DATABASES_PATH, bdb.DB_INIT_MPOOL | bdb.DB_CREATE | bdb.DB_INIT_TXN | bdb.DB_INIT_LOG)
         return env
 
+    def __next_db(self, curr_db):
+        return (curr_db + 1 if curr_db < self.get_num_connections()-1 else 0)
+
+    def merge_result(self, main_database_id, list_id, num_replicas=2):
+        list_objects = []
+        for offset in range(num_replicas+1):
+            self.__retrieve_list(main_database_id+offset)
+
 
 def search_list(manager, list_id, hexadecimal):
     list_id = int(list_id, 16 if hexadecimal else 10)
@@ -112,27 +134,37 @@ def search_list(manager, list_id, hexadecimal):
             return res
     return "Not found"
 
+def serialize_list(list, db_manager):
+    from HashingRing import HashingRing
+    hashing_ring = HashingRing(db_manager.get_num_connections())
+
+    list_id = DatabaseManagement.get_id(list['name'], list['email'])
+    list['id'] = list_id
+    list['changelog'] = []
+
+    return list, hashing_ring.find_main_database_id(list_id)
 
 if __name__ == '__main__':
     db_manager = DatabaseManagement()
 
     data = {
-        "id": "30",
         "name": "Object 1",
-        "items": [{"name": "Item 2", "quantity": 30}]
+        "items": [{"name": "Item 2", "quantity": 30}],
+        "email": "johndoe@example.com"
     }
+    data, db_id_store_on = serialize_list(data, db_manager)
+    db_manager.insert_list(db_id_store_on, data)
 
-    db_manager.insert_list(0, data)
     data = {
-        "id": "2",
-        "name": "Object 1",
-        "items": [{"name": "Item 2", "quantity": 2}]
+        "name": "buhbhbjh",
+        "items": [{"name": "Item 2", "quantity": 2}],
+        "email": "hbib@uhbuy.com"
     }
-    db_manager.insert_list(1, data)
+    data, db_id_store_on = serialize_list(data, db_manager)
+    db_manager.insert_list(db_id_store_on, data)
 
-    new_db_manager = DatabaseManagement()
-    print(search_list(new_db_manager, '30', False))
-    print(search_list(new_db_manager, '2', False))
+    db_manager.sync_replicas()
+
+    db_manager.print_all_lists()
 
     db_manager.close_databases()
-    new_db_manager.close_databases()

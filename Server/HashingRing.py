@@ -29,6 +29,7 @@ class HashingRing:
             res.append((db_id, positions_list[0]))
         return sorted(res, key=lambda x: x[1])
 
+
     def find_main_database_id(self, request_id_hash):
         smallest_greater = None
         database_identifier = None
