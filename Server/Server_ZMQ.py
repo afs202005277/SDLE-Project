@@ -56,10 +56,9 @@ class Server:
         if not list_object:
             print("List not Found")
             return ''
-        del list_object['id']
-        del list_object['email']
 
-        list_str = json.dumps(list_object).replace(' ', '').replace('\"', '').encode('utf-8')
+        dict_to_hash = {k: v for k, v in list_object.items() if k == 'list_name' or k == 'items'}
+        list_str = json.dumps(dict_to_hash).replace(' ', '').replace('\"', '').encode('utf-8')
         return hashlib.md5(list_str).hexdigest()
 
     def synchronize(self, request):

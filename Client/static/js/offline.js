@@ -95,14 +95,16 @@ async function cloudSync() {
     let cloudHash = await response.text()
     if (cloudHash === '') return
 
-    let localHash = MD5(`{list_name:${activeList.hash},items:${JSON.stringify(activeList.items)}}`)
+    let localHash = MD5(`{list_name:${activeList.hash},items:${JSON.stringify(activeList.items).replaceAll('\"', '')}}`)
     if (localHash == cloudHash)
         console.log('shopping list is syncronized.')
-    else
+    else{
+        console.log('shopping list not syncronized, requesting the cloud.')
         postReq(
-            `http://localhost:5000/req/synchronize/${activeList.getHash()}`,
+            `http://localhost:5000/req/synchronize/${localStorage.getItem(activeList.getHash() + '_id')}`,
             activeList.changes
         )
+    }
 }
 
 setInterval(() => {
@@ -218,18 +220,31 @@ addListForm.addEventListener('submit', async e => {
 
     const input = document.getElementById('list');
     const newList = input.value.trim();
+
     if (newList !== '') {
-        const list = JSON.parse(await postReq(
+        // Do not await for this request, it can block by the ZMQ
+        // To be able to use the offline continue execution
+        postReq(
             'http://localhost:5000/req/createList',
             {list_name: newList}
-        ))
-        if (list["status"] === 'existing') {
-            lists.addSharedList(list['data'])
-        } else if (list['status'] === 'created') {
-            lists.create(newList, list['data']["list_id"])
-        } else {
-            console.log("Unknown status!")
-        }
+        ).then(
+            response => {
+                const json = JSON.parse(response)
+                console.log(json)
+                if (json["status"] === 'existing') {
+                    lists.addSharedList(json['data'])
+                } else if (json['status'] === 'created') {
+                    localStorage.setItem(newList + "_id", json['data']['list_id'])
+                    activeList.render()
+                } else {
+                    console.log("Unknown status!")
+                }
+            }
+        )
+
+        // it's not a shared id, not the best solution
+        if(newList.length != 32)
+            lists.create(newList)
 
         input.value = ''
     }
