@@ -91,19 +91,21 @@ function bit_rol(d, _) {
 }
 
 async function cloudSync() {
-    const response = await fetch(`http://localhost:5000/req/cloudHash/${activeList.getHash()}`)
-    let cloudHash = await response.text()
-    if (cloudHash === '') return
+    if (activeList.getHash()) {
+        const response = await fetch(`http://localhost:5000/req/cloudHash/${activeList.getHash()}`)
+        let cloudHash = await response.text()
+        if (cloudHash === '') return
 
-    let localHash = MD5(`{list_name:${activeList.hash},items:${JSON.stringify(activeList.items).replaceAll('\"', '')}}`)
-    if (localHash == cloudHash)
-        console.log('shopping list is syncronized.')
-    else{
-        console.log('shopping list not syncronized, requesting the cloud.')
-        postReq(
-            `http://localhost:5000/req/synchronize/${localStorage.getItem(activeList.getHash() + '_id')}`,
-            activeList.changes
-        )
+        let localHash = MD5(`{list_name:${activeList.hash},items:${JSON.stringify(activeList.items).replaceAll('\"', '')}}`)
+        if (localHash == cloudHash)
+            console.log('shopping list is syncronized.')
+        else {
+            console.log('shopping list not syncronized, requesting the cloud.')
+            postReq(
+                `http://localhost:5000/req/synchronize/${activeList.getId()}`,
+                activeList.changes
+            )
+        }
     }
 }
 
@@ -138,7 +140,7 @@ class ShoppingLists {
         localStorage.setItem(name + "_id", list['id'])
         localStorage.setItem(`changelog_${name}`, JSON.stringify(list['changelog']))
 
-        activeList = new ShoppingList(name)
+        activeList = new ShoppingList(name, list['id'])
         this.save()
     }
 
@@ -168,7 +170,7 @@ class ShoppingLists {
             {list_name: item}
         )
 
-        if (activeList.getHash() == item)
+        if (activeList.getHash() === item)
             activeList = new ShoppingList(this.getFirst())
 
         this.save()
@@ -243,7 +245,7 @@ addListForm.addEventListener('submit', async e => {
         )
 
         // it's not a shared id, not the best solution
-        if(newList.length != 32)
+        if (newList.length != 32)
             lists.create(newList)
 
         input.value = ''
@@ -257,15 +259,28 @@ addListForm.addEventListener('submit', async e => {
  **/
 
 class ShoppingList {
-    constructor(hash) {
+    constructor(hash, id) {
         if (hash == null) {
             document.querySelector('h3').innerHTML = `You don't have any lists, please create one.`
         } else {
             this.hash = hash
+            if (id !== undefined)
+                this.list_id = id
+            else {
+                fetch(`http://localhost:5000/req/list_id/${hash}`).then(
+                    r => r.text().then(responseText => {
+                        this.list_id = responseText;
+                    })
+                );
+            }
             this.items = this.load();
             this.changes = this.changelog();
             this.render();
         }
+    }
+
+    getId() {
+        return this.list_id;
     }
 
     getHash() {
@@ -301,7 +316,7 @@ class ShoppingList {
     add(item, quantity) {
         if (this.items.map(i => i.name).includes(item)) {
             this.modify(() => {
-                this.items.filter(i => i.name == item)[0].quantity += quantity;
+                this.items.filter(i => i.name === item)[0].quantity += quantity;
                 this.items = this.items.filter(i => i.quantity > 0)
             })
             this.log({'operation': 'add', 'item': item, 'quantity': quantity})
@@ -316,7 +331,7 @@ class ShoppingList {
     delete(index, quantity) {
         postReq(
             'http://localhost:5000/req/buyItem',
-            {list_name: activeList.getHash(), name: this.items[index].name, quantity: quantity}
+            {list_id: activeList.getId(), name: this.items[index].name, quantity: quantity}
         )
 
         if (quantity < 1) return
@@ -331,17 +346,17 @@ class ShoppingList {
     }
 
     rename(item, newName) {
-        if (newName == '' || item.name == newName) return
+        if (newName === '' || item.name === newName) return
 
         postReq(
             'http://localhost:5000/req/renameItem',
-            {list_name: activeList.getHash(), item_name: item.name, new_item_name: newName}
+            {list_id: activeList.getId(), item_name: item.name, new_item_name: newName}
         )
 
         if (this.items.map(i => i.name).includes(newName)) {
             this.modify(() => {
-                this.items.filter(i => i.name == newName)[0].quantity += item.quantity;
-                this.items = this.items.filter(i => i.name != item.name)
+                this.items.filter(i => i.name === newName)[0].quantity += item.quantity;
+                this.items = this.items.filter(i => i.name !== item.name)
             })
         } else
             this.modify(() => {
@@ -405,14 +420,15 @@ addItemForm.addEventListener('submit', e => {
     const newItem = itemInput.value.trim();
 
     let quantity = document.getElementById('quantity').value
-    if (quantity == '') quantity = 1
-    else if (quantity == 0) return
+    if (quantity === '') quantity = 1
+    else if (quantity === 0) return
     else quantity = parseInt(quantity)
 
     if (newItem !== '') {
+        console.log(activeList.getId())
         postReq(
             'http://localhost:5000/req/addToList',
-            {list_name: activeList.getHash(), item_name: newItem, quantity: quantity}
+            {list_id: activeList.getId(), item_name: newItem, quantity: quantity}
         )
 
         activeList.add(newItem, quantity);
@@ -426,5 +442,4 @@ addItemForm.addEventListener('submit', e => {
  *
  *
  **/
-
 activeList = new ShoppingList(lists.getFirst())

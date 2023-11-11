@@ -100,11 +100,12 @@ def create_list():
 @bp.route('/req/addToList', methods=['POST'])
 def add_to_list():
     data = request.get_json()
+    print(data)
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
     data = {"type": "AddItem", "token": session['token'], "name": data.get('item_name'),
-            "quantity": data.get('quantity'), "list_name": data.get('list_name')}
+            "quantity": data.get('quantity'), "list_id": data.get('list_id')}
     socket.send_json(data)
     return ''
 
@@ -115,7 +116,7 @@ def remove_list():
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
-    data = {"type": "DeleteList", "token": session['token'], "list_name": data.get('list_name')}
+    data = {"type": "DeleteList", "token": session['token'], "list_id": data.get('list_id')}
     socket.send_json(data)
     return ''
 
@@ -127,7 +128,7 @@ def remove_item():
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
     data = {"type": "DeleteItem", "token": session['token'], "name": data.get('name'),
-            "list_name": data.get('list_name')}
+            "list_id": data.get('list_id')}
     socket.send_json(data)
     return ''
 
@@ -139,7 +140,7 @@ def rename_item():
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
     data = {"type": "RenameItem", "token": session['token'], "name": data.get('item_name'),
-            "newName": data.get('new_item_name'), "list_name": data.get('list_name')}
+            "newName": data.get('new_item_name'), "list_id": data.get('list_id')}
     socket.send_json(data)
     return ''
 
@@ -150,7 +151,7 @@ def buy_item():
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
-    data = {"type": "BuyItem", "token": session['token'], "name": data.get('name'), "list_name": data.get('list_name'),
+    data = {"type": "BuyItem", "token": session['token'], "name": data.get('name'), "list_id": data.get('list_id'),
             "quantity": data.get('quantity')}
     socket.send_json(data)
     return ''
@@ -164,12 +165,24 @@ def cloud_hash(list_hash):
     data = {"type": "GetListHash", "token": session['token'], "list_name": list_hash}
     socket.send_json(data)
     sleep(1)
-    return socket.recv_json(flags=zmq.NOBLOCK)
+    res = socket.recv_json(flags=zmq.NOBLOCK)
+    return res
+
+
+@bp.route('/req/list_id/<list_name>')
+def list_id(list_name):
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5559")
+    data = {"type": "GetListID", "token": session['token'], "list_name": list_name}
+    socket.send_json(data)
+    sleep(1)
+    res = socket.recv_json(flags=zmq.NOBLOCK)
+    return res
 
 
 @bp.route('/req/synchronize/<list_id>', methods=['POST'])
 def synchronize(list_id):
-    print(list_id)
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")

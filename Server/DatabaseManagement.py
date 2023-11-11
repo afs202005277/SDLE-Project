@@ -154,8 +154,8 @@ def serialize_list(list, db_manager):
 
 if __name__ == '__main__':
     db_manager = DatabaseManagement()
-
-    data = {
+    db_manager.print_all_lists()
+    """data = {
         "name": "Object 1",
         "items": [{"name": "Item 2", "quantity": 30}],
         "email": "johndoe@example.com"
@@ -175,4 +175,4 @@ if __name__ == '__main__':
 
     db_manager.print_all_lists()
 
-    db_manager.close_databases()
+    db_manager.close_databases()"""
