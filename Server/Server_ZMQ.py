@@ -87,20 +87,10 @@ class Server:
         if not list_object:
             print("List not Found")
             return
-        items = list_object['items']
-        found = False
-        for item in items:
-            if item['name'] == request['name']:
-                item['quantity'] += request['quantity']
-                found = True
-                break
-
-        if not found:
-            items.append({'name': request['name'], 'quantity': request['quantity']})
 
         log = {'timestamp': time.time(), 'operation': 'add', 'item': request['name'], 'quantity': request['quantity']}
         list_object['changelog'].append(log)
-        list_object['items'] = items
+
         self.db_management.replace_list(main_database_id, list_object)
         print("Success!")
         print(self.db_management.retrieve_list(main_database_id, list_id))
@@ -112,16 +102,10 @@ class Server:
         if not list_object:
             print("List not Found")
             return
-        items = list_object['items']
-        for item in items:
-            if item['name'] == request['name']:
-                item['quantity'] -= int(request['quantity'])
-            if item['quantity'] <= 0:
-                items.remove(item)
 
         log = {'timestamp': time.time(), 'operation': 'buy', 'item': request['name'], 'quantity': request['quantity']}
         list_object['changelog'].append(log)
-        list_object['items'] = items
+
         self.db_management.replace_list(main_database_id, list_object)
         print("Success!")
         print(self.db_management.retrieve_list(main_database_id, list_id))
@@ -156,12 +140,10 @@ class Server:
         if not list_object:
             print("List not Found")
             return
-        items = list_object['items']
-        for item in items:
-            if item['name'] == request['name']:
-                items.remove(item)
 
-        list_object['items'] = items
+        log = {'timestamp': time.time(), 'operation': 'delete', 'item': request['name']}
+        list_object['changelog'].append(log)
+
         self.db_management.replace_list(main_database_id, list_object)
         print("Success!")
         print(self.db_management.retrieve_list(main_database_id, list_id))
@@ -173,26 +155,10 @@ class Server:
         if not list_object:
             print("List not Found")
             return
-        items = list_object['items']
-        renamed = {}
-        for item in items:
-            if item['name'] == request['name']:
-                item['name'] = request['newName']
-                renamed = item
-                items.remove(item)
-                break
-        found = False
-        for item in items:
-            if item['name'] == request['newName']:
-                item['quantity'] += renamed['quantity']
-                found = True
-                break
-        if not found:
-            items.append(renamed)
 
         log = {'timestamp': time.time(), 'operation': 'rename', 'item': request['name'], 'newItem': request['newName']}
         list_object['changelog'].append(log)
-        list_object['items'] = items
+
         self.db_management.replace_list(main_database_id, list_object)
         print("Success!")
         print(self.db_management.retrieve_list(main_database_id, list_id))

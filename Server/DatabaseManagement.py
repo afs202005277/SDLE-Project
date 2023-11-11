@@ -12,6 +12,7 @@ class DatabaseManagement:
     def __init__(self):
         self.env = self.__initialize_environment()
         self.database_connections, self.database_connections_state, self.database_connections_num_requests, self.database_connections_num_lists = self.__new_initialize_databases()
+        self.num_replicas = 2
 
     @staticmethod
     def get_id(list_name, user_email):
@@ -19,7 +20,7 @@ class DatabaseManagement:
         md5.update((list_name + user_email).encode('utf-8'))
         return md5.hexdigest()
 
-    def find_real_main_db_id(self, given_database_id):
+    def __find_real_main_db_id(self, given_database_id):
         original = given_database_id
         while not self.database_connections_state[given_database_id]:
             given_database_id += 1
@@ -32,34 +33,37 @@ class DatabaseManagement:
         return given_database_id
 
     def replace_list(self, main_database_id, list_object):
-        main_database_id = self.find_real_main_db_id(main_database_id)
+        main_database_id = self.__find_real_main_db_id(main_database_id)
         self.database_connections_num_requests[main_database_id] += 1
         self.__insert_list(main_database_id, list_object)
 
     def insert_list(self, main_database_id, list_object):
-        main_database_id = self.find_real_main_db_id(main_database_id)
+        main_database_id = self.__find_real_main_db_id(main_database_id)
         self.database_connections_num_requests[main_database_id] += 1
-        self.__insert_list(main_database_id, list_object)
+        dbs = self.__get_db_and_replicas(main_database_id)
+        for db in dbs:
+            self.__insert_list(db, list_object)
         self.database_connections_num_lists[main_database_id] += 1
 
     def delete_list(self, main_database_id, list_id):
-        main_database_id = self.find_real_main_db_id(main_database_id)
+        main_database_id = self.__find_real_main_db_id(main_database_id)
         self.database_connections_num_requests[main_database_id] += 1
-        self.__delete_list(main_database_id, list_id)
+        dbs = self.__get_db_and_replicas(main_database_id)
+        for db in dbs:
+            self.__delete_list(db, list_id)
         self.database_connections_num_lists[main_database_id] -= 1
 
     def retrieve_list(self, main_database_id, list_id):
-        main_database_id = self.find_real_main_db_id(main_database_id)
+        main_database_id = self.__find_real_main_db_id(main_database_id)
         self.database_connections_num_requests[main_database_id] += 1
-        self.merge_list(main_database_id, list_id)
-        res = self.__retrieve_list(main_database_id, list_id)
+        res = self.merge_list(main_database_id, list_id)
         if res is None:
             return []
-        return json.loads(res.decode('utf-8'))
+        return res
 
     def close_databases(self):
         # Close all the database connections
-        for database in self.database_connections:
+        for db_id, database in self.database_connections.items():
             database.close()
         self.env.close()
 
@@ -80,7 +84,8 @@ class DatabaseManagement:
                 database_connections[int(file_path[:file_path.rindex(".")])] = db
                 database_connections_state[int(file_path[:file_path.rindex(".")])] = True
                 database_connections_num_requests[int(file_path[:file_path.rindex(".")])] = 0
-                database_connections_num_lists[int(file_path[:file_path.rindex(".")])] = len(self.__retrieve_lists(int(file_path[:file_path.rindex(".")])))
+                database_connections_num_lists[int(file_path[:file_path.rindex(".")])] = len(
+                    self.__retrieve_lists(int(file_path[:file_path.rindex(".")])))
         return database_connections, database_connections_state, database_connections_num_requests, database_connections_num_lists
 
     def __new_initialize_databases(self):
@@ -163,34 +168,92 @@ class DatabaseManagement:
         return env
 
     def __next_db(self, curr_db):
-        return (curr_db + 1 if curr_db < self.get_num_connections() - 1 else 0)
+        db_ids = list(self.database_connections.keys())
+        next_db = db_ids[db_ids.index(curr_db) + 1] if db_ids.index(curr_db) + 1 != len(db_ids) else db_ids[0]
+        return self.__find_real_main_db_id(next_db)
 
-    def merge_list(self, main_database_id, list_id, num_replicas=2):
+    def __in_a_row_dbs(self, list_dbs):
+        db_ids = list(self.database_connections.keys())
+        i = db_ids.index(list_dbs[0])
+        for j in range(1, len(list_dbs)):
+            if db_ids[(i + j) % len(db_ids)] != list_dbs[j % len(list_dbs)]:
+                return False
+        return True
+
+    def __get_db_and_replicas(self, main_database_id):
+        dbs = [main_database_id]
+        for i in range(self.num_replicas):
+            dbs.append(self.__next_db(dbs[-1]))
+        return dbs
+
+    def merge_list(self, main_database_id, list_id):
+        main_database_id = self.__find_real_main_db_id(main_database_id)
+
+        dbs = self.__get_db_and_replicas(main_database_id)
+
+        list_object = None
+        for db in dbs:
+            l_obj_temp = json.loads(self.__retrieve_list(db, list_id).decode('utf-8'))
+            if l_obj_temp != None:
+                list_object = l_obj_temp
+                break
         changelogs_together = []
-        for offset in range(num_replicas+1):
-            list_object = json.loads(self.__retrieve_list(main_database_id+offset, list_id).decode('utf-8')) if self.__retrieve_list(main_database_id+offset, list_id) != None else None
-            if list_object != None:
-                changelogs_together += list_object['changelog']
+        for db in dbs:
+            l_obj_temp = json.loads(self.__retrieve_list(db, list_id).decode('utf-8')) if self.__retrieve_list(db, list_id) != None else None
+            if l_obj_temp != None:
+                changelogs_together += l_obj_temp['changelog']
 
-        changelogs_together = list(set(changelogs_together))
-        main_list_object = json.loads(self.__retrieve_list(main_database_id, list_id).decode('utf-8'))
-
-        """for log in changelogs_together:
-            if log['operation'] == 'add':
-                for item in main_list_object['items']:
-                    if item['name'] == log['item']:
-                        edit_item = item.copy()
-                        main_list_object['items'].remove(item)
-                        edit_item['quantity'] += log['quantity']
-                        main_list_object['items'].remove(edit_item)
+        changelogs_together = sorted(changelogs_together, key=lambda x: x['timestamp'])
+        for change in changelogs_together:
+            if change['operation'] == 'add':
+                items = list_object['items']
+                for item in items:
+                    if item['name'] == change['item']:
+                        item['quantity'] += change['quantity']
                         break
                 else:
-                    main_list_object['items'].remove(edit_item)
-                if log['item'] in main_list_object['items']
-                #main_list_object['items']['']"""
+                    items.append({'name': change['item'], 'quantity': change['quantity']})
+            elif change['operation'] == 'buy':
+                items = list_object['items']
+                for item in items:
+                    if item['name'] == change['item']:
+                        item['quantity'] -= int(change['quantity'])
+                        break
+                else:
+                    items.append({'name': change['item'], 'quantity': -change['quantity']})
+            elif change['operation'] == 'rename':
+                items = list_object['items']
+                renamed = {}
+                for item in items:
+                    if item['name'] == change['item']:
+                        item['name'] = change['newItem']
+                        renamed = item
+                        items.remove(item)
+                        break
 
+                for item in items:
+                    if item['name'] == change['newItem']:
+                        item['quantity'] += renamed['quantity']
+                        break
+                else:
+                    items.append(renamed)
+            elif change['operation'] == 'delete':
+                items = list_object['items']
+                for item in items:
+                    if item['name'] == change['item']:
+                        items.remove(item)
 
-        print("a")
+        for item in list_object['items']:
+            if item['quantity'] <= 0:
+                list_object['items'].remove(item)
+
+        if self.__in_a_row_dbs(dbs):
+            list_object['changelog'] = []
+            for db in dbs:
+                self.__insert_list(db, list_object)
+
+        return list_object
+
 
 
     def search_list(self, list_id):
@@ -254,7 +317,7 @@ if __name__ == '__main__':
                       {'timestamp': time.time(), 'operation': 'add', 'item': "Item 1", 'quantity': 8}]
     }
     data, db_id_store_on = serialize_list(data, db_manager)
-    db_manager.insert_list(db_id_store_on+1, data)
+    db_manager.insert_list(db_id_store_on + 1, data)
 
     db_manager.retrieve_list(db_id_store_on, data['id'])
 
