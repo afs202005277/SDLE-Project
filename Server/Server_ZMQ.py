@@ -25,10 +25,10 @@ class Server:
         num_primary_cons = self.db_management.get_num_connections()
         self.hashing_ring = HashingRing(num_primary_cons)
         self.request_handlers = {
-            'AddItem': self.add_item, 
-            'BuyItem': self.buy_item, 
+            'AddItem': self.add_item,
+            'BuyItem': self.buy_item,
             'CreateList': self.create_list,
-            'DeleteList': self.delete_list, 
+            'DeleteList': self.delete_list,
             'DeleteItem': self.delete_item,
             'RenameItem': self.rename_item,
             'GetListHash': self.get_list_hash,
@@ -56,10 +56,9 @@ class Server:
         if not list_object:
             print("List not Found")
             return ''
-        del list_object['id']
-        del list_object['email']
 
-        list_str = json.dumps(list_object).replace(' ', '').replace('\"', '').encode('utf-8')
+        dict_to_hash = {k: v for k, v in list_object.items() if k == 'list_name' or k == 'items'}
+        list_str = json.dumps(dict_to_hash).replace(' ', '').replace('\"', '').encode('utf-8')
         return hashlib.md5(list_str).hexdigest()
 
     def synchronize(self, request):
@@ -89,7 +88,7 @@ class Server:
 
         if not found:
             items.append({'name': request['name'], 'quantity': request['quantity']})
- 
+
         log = {'timestamp': time.time(), 'operation': 'add', 'item': request['name'], 'quantity': request['quantity']}
         list_object['changelog'].append(log)
         list_object['items'] = items
@@ -119,13 +118,19 @@ class Server:
         print(self.db_management.retrieve_list(main_database_id, list_id))
 
     def create_list(self, request):
-        list_id = DatabaseManagement.get_id(request['list_name'], request['email'])
-        request["id"] = list_id
-        request['changelog'] = []
-        main_database_id = self.hashing_ring.find_main_database_id(list_id)
-        self.db_management.insert_list(main_database_id, request)
-        print("Success!")
-        print(self.db_management.retrieve_list(main_database_id, list_id))
+        existing_list = self.db_management.search_list(request['list_name'])
+        if existing_list is None:
+            list_id = DatabaseManagement.get_id(request['list_name'], request['email'])
+            request["id"] = list_id
+            request['changelog'] = []
+            main_database_id = self.hashing_ring.find_main_database_id(list_id)
+            self.db_management.insert_list(main_database_id, request)
+            print("Success!")
+            print(self.db_management.retrieve_list(main_database_id, list_id))
+            return {"status": "created", "data": {"list_id": list_id}}
+        else:
+            print("List Sharing!")
+            return {"status": "existing", "data": existing_list}
 
     def delete_list(self, request):
         list_id = DatabaseManagement.get_id(request['list_name'], request['email'])
@@ -174,7 +179,7 @@ class Server:
                 break
         if not found:
             items.append(renamed)
-        
+
         log = {'timestamp': time.time(), 'operation': 'rename', 'item': request['name'], 'newItem': request['newName']}
         list_object['changelog'].append(log)
         list_object['items'] = items

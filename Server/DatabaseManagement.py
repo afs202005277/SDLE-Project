@@ -48,7 +48,7 @@ class DatabaseManagement:
         database_connections = []
         for file_name in os.listdir(self.DATABASES_PATH):
             file_path = os.path.join(self.DATABASES_PATH, file_name)
-            if os.path.isfile(file_path) and file_path[file_path.rindex(".")+1:] == 'db':
+            if os.path.isfile(file_path) and file_path[file_path.rindex(".") + 1:] == 'db':
                 db = bdb.DB(self.env)
                 db.open(file_path, dbtype=bdb.DB_HASH, flags=(bdb.DB_CREATE | bdb.DB_AUTO_COMMIT))
                 database_connections.append(db)
@@ -65,13 +65,11 @@ class DatabaseManagement:
             database_connections.append(db)
         return database_connections
 
-    # saves in all 3 databases of the folder
     def __insert_list(self, main_database_id, list_object):
         txn = self.__begin_transaction()
         database = self.database_connections[main_database_id]
         database.put(list_object['id'].encode('utf-8'), json.dumps(list_object).encode('utf-8'), txn=txn)
         txn.commit()
-
 
     def __retrieve_list(self, database_id, list_id):
         list_id = str(list_id)
@@ -118,12 +116,20 @@ class DatabaseManagement:
         return env
 
     def __next_db(self, curr_db):
-        return (curr_db + 1 if curr_db < self.get_num_connections()-1 else 0)
+        return (curr_db + 1 if curr_db < self.get_num_connections() - 1 else 0)
 
     def merge_result(self, main_database_id, list_id, num_replicas=2):
         list_objects = []
-        for offset in range(num_replicas+1):
-            self.__retrieve_list(main_database_id+offset)
+        for offset in range(num_replicas + 1):
+            self.__retrieve_list(main_database_id + offset)
+
+    def search_list(self, list_id):
+        # list_id = int(list_id, 16 if hexadecimal else 10)
+        for i in range(self.get_num_connections()):
+            res = self.retrieve_list(i, list_id)
+            if len(res) > 0:
+                return res
+        return None
 
 
 def search_list(manager, list_id, hexadecimal):
@@ -134,6 +140,7 @@ def search_list(manager, list_id, hexadecimal):
             return res
     return "Not found"
 
+
 def serialize_list(list, db_manager):
     from HashingRing import HashingRing
     hashing_ring = HashingRing(db_manager.get_num_connections())
@@ -143,6 +150,7 @@ def serialize_list(list, db_manager):
     list['changelog'] = []
 
     return list, hashing_ring.find_main_database_id(list_id)
+
 
 if __name__ == '__main__':
     db_manager = DatabaseManagement()
