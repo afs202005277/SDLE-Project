@@ -121,7 +121,7 @@ class DatabaseManagement:
         database.put(list_object['id'].encode('utf-8'), json.dumps(list_object).encode('utf-8'), txn=txn)
         txn.commit()
 
-        if len([x for x in self.__retrieve_lists(main_database_id) if x['id'] == list_object['id']]) == 0:
+        if len([x for x in self.__retrieve_lists(main_database_id) if x[0].decode('utf-8') == list_object['id']]) == 0:
             self.database_connections_num_lists[main_database_id] += 1
 
     def __retrieve_list(self, database_id, list_id):
