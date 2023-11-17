@@ -43,7 +43,6 @@ class DatabaseManagement:
         dbs = self.__get_db_and_replicas(main_database_id)
         for db in dbs:
             self.__insert_list(db, list_object)
-        self.database_connections_num_lists[main_database_id] += 1
 
     def delete_list(self, main_database_id, list_id):
         main_database_id = self.__find_real_main_db_id(main_database_id)
@@ -51,7 +50,6 @@ class DatabaseManagement:
         dbs = self.__get_db_and_replicas(main_database_id)
         for db in dbs:
             self.__delete_list(db, list_id)
-        self.database_connections_num_lists[main_database_id] -= 1
 
     def retrieve_list(self, main_database_id, list_id):
         main_database_id = self.__find_real_main_db_id(main_database_id)
@@ -123,6 +121,9 @@ class DatabaseManagement:
         database.put(list_object['id'].encode('utf-8'), json.dumps(list_object).encode('utf-8'), txn=txn)
         txn.commit()
 
+        if len([x for x in self.__retrieve_lists(main_database_id) if x['id'] == list_object['id']]) == 0:
+            self.database_connections_num_lists[main_database_id] += 1
+
     def __retrieve_list(self, database_id, list_id):
         list_id = str(list_id)
         # Retrieve a JSON data object from the specified database by ID
@@ -157,6 +158,7 @@ class DatabaseManagement:
         except:
             print("Couldn't delete list")
         txn.commit()
+        self.database_connections_num_lists[main_database_id] -= 1
 
     def __begin_transaction(self):
         txn = self.env.txn_begin()
@@ -194,68 +196,69 @@ class DatabaseManagement:
 
         list_object = None
         for db in dbs:
-            l_obj_temp = json.loads(self.__retrieve_list(db, list_id).decode('utf-8'))
-            if l_obj_temp != None:
-                list_object = l_obj_temp
+            retrieved_temp = self.__retrieve_list(db, list_id)
+            if retrieved_temp is not None:
+                list_object = json.loads(retrieved_temp.decode('utf-8'))
                 break
-        changelogs_together = []
-        for db in dbs:
-            l_obj_temp = json.loads(self.__retrieve_list(db, list_id).decode('utf-8')) if self.__retrieve_list(db, list_id) != None else None
-            if l_obj_temp != None:
-                changelogs_together += l_obj_temp['changelog']
+        if list_object is not None:
+            changelogs_together = []
+            for db in dbs:
+                l_obj_temp = json.loads(self.__retrieve_list(db, list_id).decode('utf-8')) if self.__retrieve_list(db,
+                                                                                                                   list_id) is not None else None
+                if l_obj_temp is not None:
+                    changelogs_together += l_obj_temp['changelog']
 
-        changelogs_together = sorted(changelogs_together, key=lambda x: x['timestamp'])
-        for change in changelogs_together:
-            if change['operation'] == 'add':
-                items = list_object['items']
-                for item in items:
-                    if item['name'] == change['item']:
-                        item['quantity'] += change['quantity']
-                        break
-                else:
-                    items.append({'name': change['item'], 'quantity': change['quantity']})
-            elif change['operation'] == 'buy':
-                items = list_object['items']
-                for item in items:
-                    if item['name'] == change['item']:
-                        item['quantity'] -= int(change['quantity'])
-                        break
-                else:
-                    items.append({'name': change['item'], 'quantity': -change['quantity']})
-            elif change['operation'] == 'rename':
-                items = list_object['items']
-                renamed = {}
-                for item in items:
-                    if item['name'] == change['item']:
-                        item['name'] = change['newItem']
-                        renamed = item
-                        items.remove(item)
-                        break
+            changelogs_together = sorted(changelogs_together, key=lambda x: x['timestamp'])
+            for change in changelogs_together:
+                if change['operation'] == 'add':
+                    items = list_object['items']
+                    for item in items:
+                        if item['name'] == change['item']:
+                            item['quantity'] += change['quantity']
+                            break
+                    else:
+                        items.append({'name': change['item'], 'quantity': change['quantity']})
+                elif change['operation'] == 'buy':
+                    items = list_object['items']
+                    for item in items:
+                        if item['name'] == change['item']:
+                            item['quantity'] -= int(change['quantity'])
+                            break
+                    else:
+                        items.append({'name': change['item'], 'quantity': -change['quantity']})
+                elif change['operation'] == 'rename':
+                    items = list_object['items']
+                    renamed = {}
+                    for item in items:
+                        if item['name'] == change['item']:
+                            item['name'] = change['newItem']
+                            renamed = item
+                            items.remove(item)
+                            break
 
-                for item in items:
-                    if item['name'] == change['newItem']:
-                        item['quantity'] += renamed['quantity']
-                        break
-                else:
-                    items.append(renamed)
-            elif change['operation'] == 'delete':
-                items = list_object['items']
-                for item in items:
-                    if item['name'] == change['item']:
-                        items.remove(item)
+                    for item in items:
+                        if item['name'] == change['newItem']:
+                            item['quantity'] += renamed['quantity']
+                            break
+                    else:
+                        items.append(renamed)
+                elif change['operation'] == 'delete':
+                    items = list_object['items']
+                    for item in items:
+                        if item['name'] == change['item']:
+                            items.remove(item)
 
-        for item in list_object['items']:
-            if item['quantity'] <= 0:
-                list_object['items'].remove(item)
+            for item in list_object['items']:
+                if item['quantity'] <= 0:
+                    list_object['items'].remove(item)
 
         if self.__in_a_row_dbs(dbs) and main_database_id == given_database_id:
             list_object['changelog'] = []
+            print(list_object)
             for db in dbs:
                 self.__insert_list(db, list_object)
 
         return list_object
-
-
 
     def search_list(self, list_id):
         # list_id = int(list_id, 16 if hexadecimal else 10)
