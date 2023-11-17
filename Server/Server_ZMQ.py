@@ -261,14 +261,14 @@ class DBTerminalManagement(threading.Thread):
                     else:
                         server.db_management.database_connections_state[provided_id] = True
                         print(f"Successfully enabled database with the ID {provided_id}")
-                if command == "printlists":
-                    server.db_management.print_all_lists()
                 else:
                     if not server.db_management.database_connections_state[provided_id]:
                         print(f"The database with the ID {provided_id} was already disabled.")
                     else:
                         server.db_management.database_connections_state[provided_id] = False
                         print(f"Successfully disabled database with the ID {provided_id}.")
+            elif command == "printlists":
+                server.db_management.print_all_lists()
             elif command == "list":
                 db_ids = list(server.db_management.database_connections.keys())
                 db_states = ["ONLINE" if server.db_management.database_connections_state[key] else "OFFLINE" for key in db_ids]
