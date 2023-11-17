@@ -92,7 +92,7 @@ function bit_rol(d, _) {
 
 async function cloudSync() {
     if (activeList.getHash()) {
-        const response = await fetch(`http://localhost:5000/req/cloudHash/${activeList.getHash()}`)
+        const response = await fetch(`http://localhost:6969/req/cloudHash/${activeList.getHash()}`)
         let cloudHash = await response.text()
         if (cloudHash === '') return
 
@@ -102,7 +102,7 @@ async function cloudSync() {
         else {
             console.log('shopping list not syncronized, requesting the cloud.')
             postReq(
-                `http://localhost:5000/req/synchronize/${activeList.getId()}`,
+                `http://localhost:6969/req/synchronize/${activeList.getId()}`,
                 activeList.changes
             )
         }
@@ -166,7 +166,7 @@ class ShoppingLists {
         localStorage.removeItem(item)
 
         postReq(
-            'http://localhost:5000/req/removeList',
+            'http://localhost:6969/req/removeList',
             {list_name: item}
         )
 
@@ -227,7 +227,7 @@ addListForm.addEventListener('submit', async e => {
         // Do not await for this request, it can block by the ZMQ
         // To be able to use the offline continue execution
         postReq(
-            'http://localhost:5000/req/createList',
+            'http://localhost:6969/req/createList',
             {list_name: newList}
         ).then(
             response => {
@@ -267,7 +267,7 @@ class ShoppingList {
             if (id !== undefined)
                 this.list_id = id
             else {
-                fetch(`http://localhost:5000/req/list_id/${hash}`).then(
+                fetch(`http://localhost:6969/req/list_id/${hash}`).then(
                     r => r.text().then(responseText => {
                         this.list_id = responseText;
                     })
@@ -330,7 +330,7 @@ class ShoppingList {
 
     delete(index, quantity) {
         postReq(
-            'http://localhost:5000/req/buyItem',
+            'http://localhost:6969/req/buyItem',
             {list_id: activeList.getId(), name: this.items[index].name, quantity: quantity}
         )
 
@@ -349,7 +349,7 @@ class ShoppingList {
         if (newName === '' || item.name === newName) return
 
         postReq(
-            'http://localhost:5000/req/renameItem',
+            'http://localhost:6969/req/renameItem',
             {list_id: activeList.getId(), item_name: item.name, new_item_name: newName}
         )
 
@@ -427,7 +427,7 @@ addItemForm.addEventListener('submit', e => {
     if (newItem !== '') {
         console.log(activeList.getId())
         postReq(
-            'http://localhost:5000/req/addToList',
+            'http://localhost:6969/req/addToList',
             {list_id: activeList.getId(), item_name: newItem, quantity: quantity}
         )
 

@@ -187,6 +187,9 @@ class DatabaseManagement:
                 list_object = json.loads(retrieved_temp.decode('utf-8'))
                 break
         if list_object is not None:
+            if not self.__in_a_row_dbs(dbs) or main_database_id != given_database_id:
+                for db in dbs:
+                    self.__insert_list(db, list_object)
             changelogs_together = []
             for db in dbs:
                 l_obj_temp = json.loads(self.__retrieve_list(db, list_id).decode('utf-8')) if self.__retrieve_list(db,

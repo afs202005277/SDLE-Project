@@ -92,8 +92,6 @@ class Server:
         list_object['changelog'].append(log)
 
         self.db_management.replace_list(main_database_id, list_object)
-        print("Success!")
-        print(self.db_management.retrieve_list(main_database_id, list_id))
 
     def buy_item(self, request):
         list_id = request['list_id']

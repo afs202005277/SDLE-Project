@@ -1,8 +1,7 @@
 import os
 from flask import Flask
 from flask_session import Session
-from .routes import bp
-
+from routes import bp
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
@@ -12,3 +11,7 @@ def create_app():
     app.register_blueprint(bp)
     Session(app)
     return app
+
+if __name__ == "__main__":
+    app = create_app()
+    app.run(debug=True, port=6969)
