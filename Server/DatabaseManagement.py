@@ -11,7 +11,11 @@ class DatabaseManagement:
 
     def __init__(self):
         self.env = self.__initialize_environment()
-        self.database_connections, self.database_connections_state, self.database_connections_num_requests, self.database_connections_num_lists = self.__new_initialize_databases()
+        self.database_connections = {}
+        self.database_connections_state = {}
+        self.database_connections_num_requests = {}
+        self.database_connections_num_lists = {}
+        self.__new_initialize_databases()
         self.num_replicas = 2
 
     @staticmethod
@@ -68,40 +72,19 @@ class DatabaseManagement:
     def get_num_connections(self):
         return len(self.database_connections)
 
-    def __initialize_databases(self):
-        # Create connections to the databases inside the "databases" folder
-        database_connections = {}
-        database_connections_state = {}
-        database_connections_num_requests = {}
-        database_connections_num_lists = {}
-        for file_name in os.listdir(self.DATABASES_PATH):
-            file_path = os.path.join(self.DATABASES_PATH, file_name)
-            if os.path.isfile(file_path) and file_path[file_path.rindex(".") + 1:] == 'db':
-                db = bdb.DB(self.env)
-                db.open(file_path, dbtype=bdb.DB_HASH, flags=(bdb.DB_CREATE | bdb.DB_AUTO_COMMIT))
-                database_connections[int(file_path[:file_path.rindex(".")])] = db
-                database_connections_state[int(file_path[:file_path.rindex(".")])] = True
-                database_connections_num_requests[int(file_path[:file_path.rindex(".")])] = 0
-                database_connections_num_lists[int(file_path[:file_path.rindex(".")])] = len(
-                    self.__retrieve_lists(int(file_path[:file_path.rindex(".")])))
-        return database_connections, database_connections_state, database_connections_num_requests, database_connections_num_lists
-
     def __new_initialize_databases(self):
         # Create connections to the databases inside the "databases" folder
-        database_connections = {}
-        database_connections_state = {}
-        database_connections_num_requests = {}
-        database_connections_num_lists = {}
         names = [str(x) + ".db" for x in range(9)]
         for name in names:
             file_path = os.path.join(self.DATABASES_PATH, name)
+            db_id = int(file_path[:file_path.rindex(".")].split('/')[-1])
             db = bdb.DB(self.env)
             db.open(file_path, dbtype=bdb.DB_HASH, flags=(bdb.DB_CREATE | bdb.DB_AUTO_COMMIT))
-            database_connections[int(name.split('.db')[0])] = db
-            database_connections_state[int(name.split('.db')[0])] = True
-            database_connections_num_requests[int(name.split('.db')[0])] = 0
-            database_connections_num_lists[int(name.split('.db')[0])] = 0
-        return database_connections, database_connections_state, database_connections_num_requests, database_connections_num_lists
+            self.database_connections[db_id] = db
+            self.database_connections_state[db_id] = True
+            self.database_connections_num_requests[db_id] = 0
+            self.database_connections_num_lists[db_id] = len(
+                    self.__retrieve_lists(db_id))
 
     def create_database(self):
         new_db_id = max(self.database_connections.keys()) + 1
@@ -115,13 +98,16 @@ class DatabaseManagement:
         self.database_connections_num_lists[new_db_id] = 0
         return new_db_id
 
+    def __exists_list(self, database_id, list_id):
+        return len([x for x in self.__retrieve_lists(database_id) if x[0].decode('utf-8') == list_id]) == 0
+
     def __insert_list(self, main_database_id, list_object):
         txn = self.__begin_transaction()
         database = self.database_connections[main_database_id]
         database.put(list_object['id'].encode('utf-8'), json.dumps(list_object).encode('utf-8'), txn=txn)
         txn.commit()
 
-        if len([x for x in self.__retrieve_lists(main_database_id) if x[0].decode('utf-8') == list_object['id']]) == 0:
+        if self.__exists_list(main_database_id, list_object['id']):
             self.database_connections_num_lists[main_database_id] += 1
 
     def __retrieve_list(self, database_id, list_id):
@@ -252,11 +238,10 @@ class DatabaseManagement:
                 if item['quantity'] <= 0:
                     list_object['items'].remove(item)
 
-        if self.__in_a_row_dbs(dbs) and main_database_id == given_database_id:
-            list_object['changelog'] = []
-            print(list_object)
-            for db in dbs:
-                self.__insert_list(db, list_object)
+            if self.__in_a_row_dbs(dbs) and main_database_id == given_database_id:
+                list_object['changelog'] = []
+                for db in dbs:
+                    self.__insert_list(db, list_object)
 
         return list_object
 

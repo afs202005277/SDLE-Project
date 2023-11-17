@@ -233,6 +233,7 @@ class DBTerminalManagement(threading.Thread):
                 print("\tcreate - Creates a new DB for the server. The id of this DB is automatically assigned.\n")
                 print("\tenable [id]- Enables a currently disabled DB. Receives an argument id which represents the id of the DB.\n")
                 print("\tdisable [id] - Disables an existing DB from the server. Receives an argument id which represents the id of the DB.\n")
+                print("\tprintlists - Prints all the lists in the databases. WARNING: Only run when necessary.")
                 print("\tquit - Turns off the server and this management terminal.")
                 print("\nNotes:")
                 print("\n\tArguments can always be passed in front of any command. The only arguments that will ever be used are for commands that ask for them. Any command will alert in the case of a nonexistent/invalid argument.")
@@ -260,6 +261,8 @@ class DBTerminalManagement(threading.Thread):
                     else:
                         server.db_management.database_connections_state[provided_id] = True
                         print(f"Successfully enabled database with the ID {provided_id}")
+                if command == "printlists":
+                    server.db_management.print_all_lists()
                 else:
                     if not server.db_management.database_connections_state[provided_id]:
                         print(f"The database with the ID {provided_id} was already disabled.")
@@ -277,7 +280,7 @@ class DBTerminalManagement(threading.Thread):
                 pass
             else:
 
-                suggestions = ["help", "create", "enable", "disable", "list"]
+                suggestions = ["help", "create", "enable", "disable", "list", "printlists"]
                 min_correspondence = 3  # Minimum correspondence to consider a suggestion
 
                 suggestion = ""
