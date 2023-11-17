@@ -11,7 +11,11 @@ class DatabaseManagement:
 
     def __init__(self):
         self.env = self.__initialize_environment()
-        self.database_connections, self.database_connections_state, self.database_connections_num_requests, self.database_connections_num_lists = self.__new_initialize_databases()
+        self.database_connections = {}
+        self.database_connections_state = {}
+        self.database_connections_num_requests = {}
+        self.database_connections_num_lists = {}
+        self.__new_initialize_databases()
         self.num_replicas = 2
 
     @staticmethod
@@ -43,7 +47,6 @@ class DatabaseManagement:
         dbs = self.__get_db_and_replicas(main_database_id)
         for db in dbs:
             self.__insert_list(db, list_object)
-        self.database_connections_num_lists[main_database_id] += 1
 
     def delete_list(self, main_database_id, list_id):
         main_database_id = self.__find_real_main_db_id(main_database_id)
@@ -51,7 +54,6 @@ class DatabaseManagement:
         dbs = self.__get_db_and_replicas(main_database_id)
         for db in dbs:
             self.__delete_list(db, list_id)
-        self.database_connections_num_lists[main_database_id] -= 1
 
     def retrieve_list(self, main_database_id, list_id):
         main_database_id = self.__find_real_main_db_id(main_database_id)
@@ -70,40 +72,19 @@ class DatabaseManagement:
     def get_num_connections(self):
         return len(self.database_connections)
 
-    def __initialize_databases(self):
-        # Create connections to the databases inside the "databases" folder
-        database_connections = {}
-        database_connections_state = {}
-        database_connections_num_requests = {}
-        database_connections_num_lists = {}
-        for file_name in os.listdir(self.DATABASES_PATH):
-            file_path = os.path.join(self.DATABASES_PATH, file_name)
-            if os.path.isfile(file_path) and file_path[file_path.rindex(".") + 1:] == 'db':
-                db = bdb.DB(self.env)
-                db.open(file_path, dbtype=bdb.DB_HASH, flags=(bdb.DB_CREATE | bdb.DB_AUTO_COMMIT))
-                database_connections[int(file_path[:file_path.rindex(".")])] = db
-                database_connections_state[int(file_path[:file_path.rindex(".")])] = True
-                database_connections_num_requests[int(file_path[:file_path.rindex(".")])] = 0
-                database_connections_num_lists[int(file_path[:file_path.rindex(".")])] = len(
-                    self.__retrieve_lists(int(file_path[:file_path.rindex(".")])))
-        return database_connections, database_connections_state, database_connections_num_requests, database_connections_num_lists
-
     def __new_initialize_databases(self):
         # Create connections to the databases inside the "databases" folder
-        database_connections = {}
-        database_connections_state = {}
-        database_connections_num_requests = {}
-        database_connections_num_lists = {}
         names = [str(x) + ".db" for x in range(9)]
         for name in names:
             file_path = os.path.join(self.DATABASES_PATH, name)
+            db_id = int(file_path[:file_path.rindex(".")].split('/')[-1])
             db = bdb.DB(self.env)
             db.open(file_path, dbtype=bdb.DB_HASH, flags=(bdb.DB_CREATE | bdb.DB_AUTO_COMMIT))
-            database_connections[int(name.split('.db')[0])] = db
-            database_connections_state[int(name.split('.db')[0])] = True
-            database_connections_num_requests[int(name.split('.db')[0])] = 0
-            database_connections_num_lists[int(name.split('.db')[0])] = 0
-        return database_connections, database_connections_state, database_connections_num_requests, database_connections_num_lists
+            self.database_connections[db_id] = db
+            self.database_connections_state[db_id] = True
+            self.database_connections_num_requests[db_id] = 0
+            self.database_connections_num_lists[db_id] = len(
+                    self.__retrieve_lists(db_id))
 
     def create_database(self):
         new_db_id = max(self.database_connections.keys()) + 1
@@ -117,11 +98,17 @@ class DatabaseManagement:
         self.database_connections_num_lists[new_db_id] = 0
         return new_db_id
 
+    def __exists_list(self, database_id, list_id):
+        return len([x for x in self.__retrieve_lists(database_id) if x[0].decode('utf-8') == list_id]) == 0
+
     def __insert_list(self, main_database_id, list_object):
         txn = self.__begin_transaction()
         database = self.database_connections[main_database_id]
         database.put(list_object['id'].encode('utf-8'), json.dumps(list_object).encode('utf-8'), txn=txn)
         txn.commit()
+
+        if self.__exists_list(main_database_id, list_object['id']):
+            self.database_connections_num_lists[main_database_id] += 1
 
     def __retrieve_list(self, database_id, list_id):
         list_id = str(list_id)
@@ -157,6 +144,7 @@ class DatabaseManagement:
         except:
             print("Couldn't delete list")
         txn.commit()
+        self.database_connections_num_lists[main_database_id] -= 1
 
     def __begin_transaction(self):
         txn = self.env.txn_begin()
@@ -194,68 +182,68 @@ class DatabaseManagement:
 
         list_object = None
         for db in dbs:
-            l_obj_temp = json.loads(self.__retrieve_list(db, list_id).decode('utf-8'))
-            if l_obj_temp != None:
-                list_object = l_obj_temp
+            retrieved_temp = self.__retrieve_list(db, list_id)
+            if retrieved_temp is not None:
+                list_object = json.loads(retrieved_temp.decode('utf-8'))
                 break
-        changelogs_together = []
-        for db in dbs:
-            l_obj_temp = json.loads(self.__retrieve_list(db, list_id).decode('utf-8')) if self.__retrieve_list(db, list_id) != None else None
-            if l_obj_temp != None:
-                changelogs_together += l_obj_temp['changelog']
-
-        changelogs_together = sorted(changelogs_together, key=lambda x: x['timestamp'])
-        for change in changelogs_together:
-            if change['operation'] == 'add':
-                items = list_object['items']
-                for item in items:
-                    if item['name'] == change['item']:
-                        item['quantity'] += change['quantity']
-                        break
-                else:
-                    items.append({'name': change['item'], 'quantity': change['quantity']})
-            elif change['operation'] == 'buy':
-                items = list_object['items']
-                for item in items:
-                    if item['name'] == change['item']:
-                        item['quantity'] -= int(change['quantity'])
-                        break
-                else:
-                    items.append({'name': change['item'], 'quantity': -change['quantity']})
-            elif change['operation'] == 'rename':
-                items = list_object['items']
-                renamed = {}
-                for item in items:
-                    if item['name'] == change['item']:
-                        item['name'] = change['newItem']
-                        renamed = item
-                        items.remove(item)
-                        break
-
-                for item in items:
-                    if item['name'] == change['newItem']:
-                        item['quantity'] += renamed['quantity']
-                        break
-                else:
-                    items.append(renamed)
-            elif change['operation'] == 'delete':
-                items = list_object['items']
-                for item in items:
-                    if item['name'] == change['item']:
-                        items.remove(item)
-
-        for item in list_object['items']:
-            if item['quantity'] <= 0:
-                list_object['items'].remove(item)
-
-        if self.__in_a_row_dbs(dbs) and main_database_id == given_database_id:
-            list_object['changelog'] = []
+        if list_object is not None:
+            changelogs_together = []
             for db in dbs:
-                self.__insert_list(db, list_object)
+                l_obj_temp = json.loads(self.__retrieve_list(db, list_id).decode('utf-8')) if self.__retrieve_list(db,
+                                                                                                                   list_id) is not None else None
+                if l_obj_temp is not None:
+                    changelogs_together += l_obj_temp['changelog']
+
+            changelogs_together = sorted(changelogs_together, key=lambda x: x['timestamp'])
+            for change in changelogs_together:
+                if change['operation'] == 'add':
+                    items = list_object['items']
+                    for item in items:
+                        if item['name'] == change['item']:
+                            item['quantity'] += change['quantity']
+                            break
+                    else:
+                        items.append({'name': change['item'], 'quantity': change['quantity']})
+                elif change['operation'] == 'buy':
+                    items = list_object['items']
+                    for item in items:
+                        if item['name'] == change['item']:
+                            item['quantity'] -= int(change['quantity'])
+                            break
+                    else:
+                        items.append({'name': change['item'], 'quantity': -change['quantity']})
+                elif change['operation'] == 'rename':
+                    items = list_object['items']
+                    renamed = {}
+                    for item in items:
+                        if item['name'] == change['item']:
+                            item['name'] = change['newItem']
+                            renamed = item
+                            items.remove(item)
+                            break
+
+                    for item in items:
+                        if item['name'] == change['newItem']:
+                            item['quantity'] += renamed['quantity']
+                            break
+                    else:
+                        items.append(renamed)
+                elif change['operation'] == 'delete':
+                    items = list_object['items']
+                    for item in items:
+                        if item['name'] == change['item']:
+                            items.remove(item)
+
+            for item in list_object['items']:
+                if item['quantity'] <= 0:
+                    list_object['items'].remove(item)
+
+            if self.__in_a_row_dbs(dbs) and main_database_id == given_database_id:
+                list_object['changelog'] = []
+                for db in dbs:
+                    self.__insert_list(db, list_object)
 
         return list_object
-
-
 
     def search_list(self, list_id):
         # list_id = int(list_id, 16 if hexadecimal else 10)
