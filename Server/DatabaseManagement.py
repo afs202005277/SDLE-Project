@@ -187,6 +187,7 @@ class DatabaseManagement:
         return dbs
 
     def merge_list(self, main_database_id, list_id):
+        given_database_id = main_database_id
         main_database_id = self.__find_real_main_db_id(main_database_id)
 
         dbs = self.__get_db_and_replicas(main_database_id)
@@ -247,7 +248,7 @@ class DatabaseManagement:
             if item['quantity'] <= 0:
                 list_object['items'].remove(item)
 
-        if self.__in_a_row_dbs(dbs):
+        if self.__in_a_row_dbs(dbs) and main_database_id == given_database_id:
             list_object['changelog'] = []
             for db in dbs:
                 self.__insert_list(db, list_object)
