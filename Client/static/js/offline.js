@@ -19,7 +19,7 @@ async function postReq(url, data) {
         if (url.includes('createList')) {
             return await response.text();
         }
-
+        return await response.json();
     } catch (error) {
         console.error('Error during POST request:', error);
         throw error; // Re-throw the error to propagate it further
@@ -90,28 +90,65 @@ function bit_rol(d, _) {
     return d << _ | d >>> 32 - _
 }
 
-async function cloudSync() {
-    if (activeList.getHash()) {
-        const response = await fetch(`http://localhost:6969/req/cloudHash/${activeList.getHash()}`)
-        let cloudHash = await response.text()
-        if (cloudHash === '') return
+/**
+ *
+ *
+ **/
 
+async function cloudSync() {
+    // We arent inside a list
+    if(!activeList.getHash()) return
+
+    // The list has a ID? (it doesnt has a ID if never got syncronized)
+    if(activeList.getId()){
+        let response = await fetch(`http://localhost:6969/req/cloudHash/${activeList.getId()}`)
+        let cloudHash = await response.text()
         let localHash = MD5(`{list_name:${activeList.hash},items:${JSON.stringify(activeList.items).replaceAll('\"', '')}}`)
-        if (localHash == cloudHash)
+
+        if(cloudHash == localHash){
             console.log('shopping list is syncronized.')
-        else {
-            console.log('shopping list not syncronized, requesting the cloud.')
-            postReq(
-                `http://localhost:6969/req/synchronize/${activeList.getId()}`,
-                activeList.changes
-            )
+            return
         }
+
+        console.log('shopping list not syncronized, requesting the cloud.')
+        response = await postReq(
+            `http://localhost:6969/req/synchronize/${activeList.getId()}`,
+            activeList.changes
+        )
+
+        localStorage.setItem(response['list_name'] + "_id", response['list_id'])
+        localStorage.setItem(`changelog_${response['list_name']}`, [])
+        localStorage.setItem(response['list_id'], response['items']);
+    } else {
+        console.log('shopping list doesnt exists in the cloud, creating...')
+        const response = await postReq(
+            `http://localhost:6969/req/synchronize/${activeList.getId()}`,
+            {
+                'name': activeList.getHash(),
+                'changes': activeList.changes
+            }
+        )
+        
+        localStorage.setItem(response['list_name'] + "_id", response['list_id'])
     }
 }
 
+function getTimestampInSeconds() {
+    return Math.floor(Date.now() / 1000)
+}
+
+/*
 setInterval(() => {
     cloudSync()
 }, 5000);
+*/
+
+document.getElementById('helper_clear').addEventListener('click', () => {
+    localStorage.clear()
+    location.reload()
+})
+
+document.getElementById('helper_sync').addEventListener('click', cloudSync)
 
 /**
  *
@@ -155,7 +192,7 @@ class ShoppingLists {
 
         this.lists.push(name)
         localStorage.setItem(name, [])
-        localStorage.setItem(name + "_id", list_id)
+        if(list_id) localStorage.setItem(name + "_id", list_id)
 
         activeList = new ShoppingList(name)
         this.save()
@@ -319,12 +356,12 @@ class ShoppingList {
                 this.items.filter(i => i.name === item)[0].quantity += quantity;
                 this.items = this.items.filter(i => i.quantity > 0)
             })
-            this.log({'operation': 'add', 'item': item, 'quantity': quantity})
+            this.log({'operation': 'add', 'item': item, 'quantity': quantity, 'timestamp': getTimestampInSeconds()})
         } else if (quantity > 0) {
             this.modify(() => {
                 this.items.push(createItem(item, quantity));
             })
-            this.log({'operation': 'add', 'item': item, 'quantity': quantity})
+            this.log({'operation': 'add', 'item': item, 'quantity': quantity, 'timestamp': getTimestampInSeconds()})
         }
     }
 
@@ -335,14 +372,18 @@ class ShoppingList {
         )
 
         if (quantity < 1) return
-        else if (quantity < this.items[index].quantity)
+        else if (quantity < this.items[index].quantity){
             this.modify(() => {
                 this.items[index].quantity -= quantity
             })
-        else
+            this.log({'operation': 'buy', 'item': this.items[index].name, 'quantity': quantity, 'timestamp': getTimestampInSeconds()})
+        }
+        else{
             this.modify(() => {
                 this.items.splice(index, 1);
             })
+            this.log({'operation': 'buy', 'item': this.items[index].name, 'quantity': this.items[index].quantity, 'timestamp': getTimestampInSeconds()})
+        }
     }
 
     rename(item, newName) {
@@ -358,10 +399,14 @@ class ShoppingList {
                 this.items.filter(i => i.name === newName)[0].quantity += item.quantity;
                 this.items = this.items.filter(i => i.name !== item.name)
             })
-        } else
+            this.log({'operation': 'remove', 'item': item.name, 'timestamp': getTimestampInSeconds()})
+            this.log({'operation': 'add', 'item': newName, 'quantity': item.quantity, 'timestamp': getTimestampInSeconds()})
+        } else {
             this.modify(() => {
                 item.name = newName;
             })
+            this.log({'operation': 'rename', 'item': newName, 'quantity': item.quantity, 'timestamp': getTimestampInSeconds()})
+        }
     }
 
     render() {

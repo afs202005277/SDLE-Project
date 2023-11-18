@@ -174,6 +174,50 @@ class DatabaseManagement:
             dbs.append(self.__next_db(dbs[-1]))
         return dbs
 
+    def apply_changelogs(self, list_object, changelogs):
+        for change in changelogs:
+            if change['operation'] == 'add':
+                items = list_object['items']
+                for item in items:
+                    if item['name'] == change['item']:
+                        item['quantity'] += change['quantity']
+                        break
+                else:
+                    items.append({'name': change['item'], 'quantity': change['quantity']})
+            elif change['operation'] == 'buy':
+                items = list_object['items']
+                for item in items:
+                    if item['name'] == change['item']:
+                        item['quantity'] -= int(change['quantity'])
+                        break
+                else:
+                    items.append({'name': change['item'], 'quantity': -change['quantity']})
+            elif change['operation'] == 'rename':
+                items = list_object['items']
+                renamed = {}
+                for item in items:
+                    if item['name'] == change['item']:
+                        item['name'] = change['newItem']
+                        renamed = item
+                        items.remove(item)
+                        break
+
+                for item in items:
+                    if item['name'] == change['newItem']:
+                        item['quantity'] += renamed['quantity']
+                        break
+                else:
+                    items.append(renamed)
+            elif change['operation'] == 'delete':
+                items = list_object['items']
+                for item in items:
+                    if item['name'] == change['item']:
+                        items.remove(item)
+
+        for item in list_object['items']:
+            if item['quantity'] <= 0:
+                list_object['items'].remove(item)
+
     def merge_list(self, main_database_id, list_id):
         given_database_id = main_database_id
         main_database_id = self.__find_real_main_db_id(main_database_id)
@@ -198,48 +242,7 @@ class DatabaseManagement:
                     changelogs_together += l_obj_temp['changelog']
 
             changelogs_together = sorted(changelogs_together, key=lambda x: x['timestamp'])
-            for change in changelogs_together:
-                if change['operation'] == 'add':
-                    items = list_object['items']
-                    for item in items:
-                        if item['name'] == change['item']:
-                            item['quantity'] += change['quantity']
-                            break
-                    else:
-                        items.append({'name': change['item'], 'quantity': change['quantity']})
-                elif change['operation'] == 'buy':
-                    items = list_object['items']
-                    for item in items:
-                        if item['name'] == change['item']:
-                            item['quantity'] -= int(change['quantity'])
-                            break
-                    else:
-                        items.append({'name': change['item'], 'quantity': -change['quantity']})
-                elif change['operation'] == 'rename':
-                    items = list_object['items']
-                    renamed = {}
-                    for item in items:
-                        if item['name'] == change['item']:
-                            item['name'] = change['newItem']
-                            renamed = item
-                            items.remove(item)
-                            break
-
-                    for item in items:
-                        if item['name'] == change['newItem']:
-                            item['quantity'] += renamed['quantity']
-                            break
-                    else:
-                        items.append(renamed)
-                elif change['operation'] == 'delete':
-                    items = list_object['items']
-                    for item in items:
-                        if item['name'] == change['item']:
-                            items.remove(item)
-
-            for item in list_object['items']:
-                if item['quantity'] <= 0:
-                    list_object['items'].remove(item)
+            self.apply_changelogs(list_object, changelogs_together)
 
             if self.__in_a_row_dbs(dbs) and main_database_id == given_database_id:
                 list_object['changelog'] = []

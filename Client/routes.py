@@ -165,7 +165,7 @@ def cloud_hash(list_hash):
     data = {"type": "GetListHash", "token": session['token'], "list_name": list_hash}
     socket.send_json(data)
     sleep(1)
-    res = socket.recv_json(flags=zmq.NOBLOCK)
+    res = socket.recv_json()
     return res
 
 
@@ -177,19 +177,25 @@ def list_id(list_name):
     data = {"type": "GetListID", "token": session['token'], "list_name": list_name}
     socket.send_json(data)
     sleep(1)
-    res = socket.recv_json(flags=zmq.NOBLOCK)
+    res = socket.recv_json()
     return res
 
 
 @bp.route('/req/synchronize/<list_id>', methods=['POST'])
 def synchronize(list_id):
+    data = request.get_json()
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
-    data = {"type": "Synchronize", "token": session['token'], "list_id": list_id}
+    if 'name' in data:
+        data = {"type": "Synchronize", "token": session['token'], "list_id": list_id, "list_name": data['name'], "changelog": data['changes']}
+    else:
+        data = {"type": "Synchronize", "token": session['token'], "list_id": list_id, "changelog": data}
     socket.send_json(data)
     sleep(1)
-    return socket.recv_json(flags=zmq.NOBLOCK)
+    res = socket.recv_json()
+    print(res)
+    return res
 
 
 @bp.route('/login', methods=['POST'])

@@ -69,14 +69,28 @@ class Server:
         return hashlib.md5(list_str).hexdigest()
 
     def synchronize(self, request):
+        print(request)
+
+        list_id = request['list_id']
+        main_database_id = self.hashing_ring.find_main_database_id(list_id)
+
+        offline_changelog = request['changelog']
+
+        cloud_db = self.db_management.retrieve_list(main_database_id, list_id)
+        if cloud_db == []: 
+            print('list doesnt exists, create it')
+            self.create_list(request)
+        cloud_db = self.db_management.retrieve_list(main_database_id, list_id)
+
+        print(cloud_db)
+        changelogs = sorted(offline_changelog + cloud_db['changelog'], key=lambda x: x['timestamp'])
+        self.db_management.apply_changelogs(cloud_db, offline_changelog)
+        print(cloud_db)
+
+        self.db_management.insert_list(main_database_id, cloud_db)
+
         print('sync request')
-        # Fetch list from database
-
-        # Parse changelog sent by client in request
-        # Apply changes in the list of the cloud
-
-        # Send client the sync. list (override existing in client)
-        return ''
+        return json.dumps(cloud_db)
 
     def add_item(self, request):
         list_id = request['list_id']
@@ -114,6 +128,7 @@ class Server:
         if existing_list is None:
             list_id = DatabaseManagement.get_id(request['list_name'], request['email'])
             request["id"] = list_id
+            request["items"] = []
             request['changelog'] = []
             main_database_id = self.hashing_ring.find_main_database_id(list_id)
             self.db_management.insert_list(main_database_id, request)

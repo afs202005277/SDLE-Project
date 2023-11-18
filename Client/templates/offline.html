@@ -24,7 +24,15 @@
                         <input type="text" class="form-control w-75" id="list" required placeholder="Enter URL/Name of the list...">
                         <button class="btn" type="submit"><i class="fa-solid fa-right-to-bracket text-white"></i></button>
                     </div>
-                </form>        
+                </form>       
+                
+                <div class="mt-5">
+                    <h2>Testing Helpers:</h2>
+                    <div class="d-flex flex-column gap-2">
+                        <button id="helper_clear" class="btn btn-primary">Clear Local Storage</button>
+                        <button id="helper_sync" class="btn btn-primary">Sync with cloud</button>
+                    </div>
+                </div>
             </div>
             <div class="d-flex flex-column align-items-center">
                 <h3 class="my-4"></h3>
@@ -101,4 +109,9 @@
     input::placeholder {
         font-size: .8rem;
     }   
+
+    .btn-primary{
+        border: 1px solid white !important;
+        background-color: var(--bs-primary-rgb) !important;
+    }
 </style>
