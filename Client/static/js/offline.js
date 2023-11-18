@@ -16,13 +16,9 @@ async function postReq(url, data) {
             },
             body: JSON.stringify(data),
         });
-        if (url.includes('createList')) {
-            return await response.text();
-        }
         return await response.json();
     } catch (error) {
         console.error('Error during POST request:', error);
-        throw error; // Re-throw the error to propagate it further
     }
 }
 
@@ -116,9 +112,14 @@ async function cloudSync() {
             activeList.changes
         )
 
-        localStorage.setItem(response['list_name'] + "_id", response['list_id'])
+        console.log(activeList.getId())
+        console.log(response)
+
+        localStorage.setItem(activeList.getHash() + "_id", response['id'])
         localStorage.setItem(`changelog_${response['list_name']}`, [])
-        localStorage.setItem(response['list_id'], response['items']);
+        localStorage.setItem(activeList.getHash(), JSON.stringify(response['items']));
+
+        activeList = new ShoppingList(activeList.getHash(), response['id'])
     } else {
         console.log('shopping list doesnt exists in the cloud, creating...')
         const response = await postReq(
@@ -267,8 +268,7 @@ addListForm.addEventListener('submit', async e => {
             'http://localhost:6969/req/createList',
             {list_name: newList}
         ).then(
-            response => {
-                const json = JSON.parse(response)
+            json => {
                 console.log(json)
                 if (json["status"] === 'existing') {
                     lists.addSharedList(json['data'])
@@ -373,16 +373,16 @@ class ShoppingList {
 
         if (quantity < 1) return
         else if (quantity < this.items[index].quantity){
+            this.log({'operation': 'buy', 'item': this.items[index].name, 'quantity': quantity, 'timestamp': getTimestampInSeconds()})
             this.modify(() => {
                 this.items[index].quantity -= quantity
             })
-            this.log({'operation': 'buy', 'item': this.items[index].name, 'quantity': quantity, 'timestamp': getTimestampInSeconds()})
         }
         else{
+            this.log({'operation': 'buy', 'item': this.items[index].name, 'quantity': this.items[index].quantity, 'timestamp': getTimestampInSeconds()})
             this.modify(() => {
                 this.items.splice(index, 1);
             })
-            this.log({'operation': 'buy', 'item': this.items[index].name, 'quantity': this.items[index].quantity, 'timestamp': getTimestampInSeconds()})
         }
     }
 
@@ -436,7 +436,7 @@ class ShoppingList {
                 action.outerHTML = action.outerHTML; // reset listeners
                 action = deleteModal.querySelector('.modal-action')
                 action.addEventListener('click', () => {
-                    this.delete(index, document.querySelector('#deleteModal #quantity').value);
+                    this.delete(index, document.querySelector('#deleteModal #quantity').value)
                 })
             })
 

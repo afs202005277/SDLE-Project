@@ -107,7 +107,8 @@ def add_to_list():
     data = {"type": "AddItem", "token": session['token'], "name": data.get('item_name'),
             "quantity": data.get('quantity'), "list_id": data.get('list_id')}
     socket.send_json(data)
-    return ''
+    res = socket.recv_json()
+    return res
 
 
 @bp.route('/req/removeList', methods=['POST'])
@@ -118,7 +119,8 @@ def remove_list():
     socket.connect("tcp://localhost:5559")
     data = {"type": "DeleteList", "token": session['token'], "list_id": data.get('list_id')}
     socket.send_json(data)
-    return ''
+    res = socket.recv_json()
+    return res
 
 
 @bp.route('/req/removeItem', methods=['POST'])
@@ -130,7 +132,8 @@ def remove_item():
     data = {"type": "DeleteItem", "token": session['token'], "name": data.get('name'),
             "list_id": data.get('list_id')}
     socket.send_json(data)
-    return ''
+    res = socket.recv_json()
+    return res
 
 
 @bp.route('/req/renameItem', methods=['POST'])
@@ -142,7 +145,8 @@ def rename_item():
     data = {"type": "RenameItem", "token": session['token'], "name": data.get('item_name'),
             "newName": data.get('new_item_name'), "list_id": data.get('list_id')}
     socket.send_json(data)
-    return ''
+    res = socket.recv_json()
+    return res
 
 
 @bp.route('/req/buyItem', methods=['POST'])
@@ -154,15 +158,16 @@ def buy_item():
     data = {"type": "BuyItem", "token": session['token'], "name": data.get('name'), "list_id": data.get('list_id'),
             "quantity": data.get('quantity')}
     socket.send_json(data)
-    return ''
+    res = socket.recv_json()
+    return res
 
 
-@bp.route('/req/cloudHash/<list_hash>')
-def cloud_hash(list_hash):
+@bp.route('/req/cloudHash/<list_id>')
+def cloud_hash(list_id):
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
-    data = {"type": "GetListHash", "token": session['token'], "list_name": list_hash}
+    data = {"type": "GetListHash", "token": session['token'], "list_id": list_id}
     socket.send_json(data)
     sleep(1)
     res = socket.recv_json()

@@ -40,6 +40,12 @@ class Server:
         }
         self.db_forbidden_parameters = ['token', 'type']
 
+    def __success(self):
+        return json.dumps({'status': 'success'})
+
+    def __fail(self):
+        return json.dumps({'status': 'fail'})
+
     def remove_attributes(self, json_obj):
         if isinstance(json_obj, dict):
             # Remove dictionary keys
@@ -57,7 +63,7 @@ class Server:
         return DatabaseManagement.get_id(request['list_name'], request['email'])
 
     def get_list_hash(self, request):
-        list_id = DatabaseManagement.get_id(request['list_name'], request['email'])
+        list_id = request['list_id']
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
         if not list_object:
@@ -100,12 +106,13 @@ class Server:
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
         if not list_object:
             print("List not Found")
-            return
+            return self.__fail()
 
         log = {'timestamp': time.time(), 'operation': 'add', 'item': request['name'], 'quantity': request['quantity']}
         list_object['changelog'].append(log)
 
         self.db_management.replace_list(main_database_id, list_object)
+        return self.__success()
 
     def buy_item(self, request):
         list_id = request['list_id']
@@ -113,7 +120,7 @@ class Server:
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
         if not list_object:
             print("List not Found")
-            return
+            return self.__fail()
 
         log = {'timestamp': time.time(), 'operation': 'buy', 'item': request['name'], 'quantity': request['quantity']}
         list_object['changelog'].append(log)
@@ -121,6 +128,7 @@ class Server:
         self.db_management.replace_list(main_database_id, list_object)
         print("Success!")
         print(self.db_management.retrieve_list(main_database_id, list_id))
+        return self.__success()
 
     # no caso do client adicionar uma shared list, o id da lista vem no list["name"]
     def create_list(self, request):
@@ -145,6 +153,7 @@ class Server:
         self.db_management.delete_list(main_database_id, list_id)
         print("Success!")
         print(self.db_management.retrieve_list(main_database_id, list_id))
+        return self.__success()
 
     def delete_item(self, request):
         list_id = request['list_id']
@@ -152,7 +161,7 @@ class Server:
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
         if not list_object:
             print("List not Found")
-            return
+            return self.__fail()
 
         log = {'timestamp': time.time(), 'operation': 'delete', 'item': request['name']}
         list_object['changelog'].append(log)
@@ -160,6 +169,7 @@ class Server:
         self.db_management.replace_list(main_database_id, list_object)
         print("Success!")
         print(self.db_management.retrieve_list(main_database_id, list_id))
+        return self.__success()
 
     def rename_item(self, request):
         list_id = request['list_id']
@@ -167,7 +177,7 @@ class Server:
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
         if not list_object:
             print("List not Found")
-            return
+            return self.__fail()
 
         log = {'timestamp': time.time(), 'operation': 'rename', 'item': request['name'], 'newItem': request['newName']}
         list_object['changelog'].append(log)
@@ -175,6 +185,7 @@ class Server:
         self.db_management.replace_list(main_database_id, list_object)
         print("Success!")
         print(self.db_management.retrieve_list(main_database_id, list_id))
+        return self.__success()
 
     def get_user_email(self, token):
         return self.authentication_management.decode_token(token)
