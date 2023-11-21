@@ -83,7 +83,7 @@ class Server:
         offline_changelog = request['changelog']
 
         cloud_db = self.db_management.retrieve_list(main_database_id, list_id)
-        if cloud_db == []: 
+        if cloud_db == []:
             print('list doesnt exists, create it')
             self.create_list(request)
         cloud_db = self.db_management.retrieve_list(main_database_id, list_id)
@@ -195,7 +195,7 @@ class Server:
         socket = context.socket(zmq.REP)
         socket.connect("tcp://localhost:5560")
 
-        global tm # checks if terminal manager is running
+        global tm  # checks if terminal manager is running
         while tm.is_alive():
             request = socket.recv_json()
             response = None
@@ -212,6 +212,7 @@ class Server:
             response = self.request_handlers[request['type']](self.remove_attributes(request))
             socket.send_json(response)
 
+
 class RequestsServer(threading.Thread):
     def __init__(self):
         super(RequestsServer, self).__init__(name="Requests Server Thread")
@@ -223,6 +224,7 @@ class RequestsServer(threading.Thread):
 
     def stop(self):
         self._stop_event.set()
+
 
 class DBTerminalManagement(threading.Thread):
     def __init__(self):
@@ -253,14 +255,18 @@ class DBTerminalManagement(threading.Thread):
             if command == "help":
                 print("Available Commands:")
                 print("\n\thelp - Shows a list of the existing commands with a comprehensive explanation.\n")
-                print("\tlist - Lists the current existing DBs. Shows their ids, current state (ONLINE, OFFLINE), number of requests and number of shopping lists.\n")
+                print(
+                    "\tlist - Lists the current existing DBs. Shows their ids, current state (ONLINE, OFFLINE), number of requests and number of shopping lists.\n")
                 print("\tcreate - Creates a new DB for the server. The id of this DB is automatically assigned.\n")
-                print("\tenable [id]- Enables a currently disabled DB. Receives an argument id which represents the id of the DB.\n")
-                print("\tdisable [id] - Disables an existing DB from the server. Receives an argument id which represents the id of the DB.\n")
+                print(
+                    "\tenable [id]- Enables a currently disabled DB. Receives an argument id which represents the id of the DB.\n")
+                print(
+                    "\tdisable [id] - Disables an existing DB from the server. Receives an argument id which represents the id of the DB.\n")
                 print("\tprintlists - Prints all the lists in the databases. WARNING: Only run when necessary.")
                 print("\tquit - Turns off the server and this management terminal.")
                 print("\nNotes:")
-                print("\n\tArguments can always be passed in front of any command. The only arguments that will ever be used are for commands that ask for them. Any command will alert in the case of a nonexistent/invalid argument.")
+                print(
+                    "\n\tArguments can always be passed in front of any command. The only arguments that will ever be used are for commands that ask for them. Any command will alert in the case of a nonexistent/invalid argument.")
             elif command == "create":
                 new_db_id = server.db_management.create_database()
                 server.hashing_ring = HashingRing(len(server.db_management.database_connections.keys()))
@@ -295,10 +301,12 @@ class DBTerminalManagement(threading.Thread):
                 server.db_management.print_all_lists()
             elif command == "list":
                 db_ids = list(server.db_management.database_connections.keys())
-                db_states = ["ONLINE" if server.db_management.database_connections_state[key] else "OFFLINE" for key in db_ids]
+                db_states = ["ONLINE" if server.db_management.database_connections_state[key] else "OFFLINE" for key in
+                             db_ids]
                 db_num_requests = [server.db_management.database_connections_num_requests[key] for key in db_ids]
                 db_num_lists = [server.db_management.database_connections_num_lists[key] for key in db_ids]
-                table_dict = {"Database ID": db_ids, "State": db_states, "Nº Requests": db_num_requests, "Nº Lists": db_num_lists}
+                table_dict = {"Database ID": db_ids, "State": db_states, "Nº Requests": db_num_requests,
+                              "Nº Lists": db_num_lists}
                 self.print_table(table_dict)
             elif command == "quit":
                 pass
@@ -321,7 +329,6 @@ class DBTerminalManagement(threading.Thread):
                     print(f"The command '{command}' does not exist. Did you mean '{suggestion}'?")
                 else:
                     print(f"The command '{command}' does not exist. Write 'help' for possible commands.")
-
 
         print("Thank you for using our system! Quitting.")
 

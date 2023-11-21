@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd Client && flask --app __init__.py --debug run &
+cd Client && flask --app __init__.py --debug run -p 6969 &
 flask_pid=$!
 echo "$flask_pid" > process_pids.txt
 
