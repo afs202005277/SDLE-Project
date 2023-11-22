@@ -1,7 +1,6 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
-import pylab
 
 def connected(graph):
     return True if len(list(nx.connected_components(graph))) == 1 else False
@@ -25,8 +24,8 @@ def create_random_graph(vertices):
     return (len(edges), G)
 
 
-def test_random_graph(vertices):
-    out = [create_random_graph(vertices) for _ in range(30)]
+def test_random_graph(vertices, config):
+    out = [create_random_graph(vertices) for _ in range(config)]
     colors = ['blue', 'black', 'red', 'pink', 'green', 'orange', 'purple', 'yellow']
     edges = []
     graphs = []
@@ -35,9 +34,10 @@ def test_random_graph(vertices):
         edges.append(edge_num)
 
     i = 1
+    edge_av = sum(edges) / len(edges)
     plt.figure(figsize=(22,13))
     plt.axis("off")
-    plt.title(f"{vertices} Nodes (Average edges created: {(sum(edges) / len(edges)):.3f})")
+    plt.title(f"{vertices} Nodes (Average edges created: {edge_av:.3f})")
     for graph in graphs:
         options = {
             'node_color': colors[i % (len(colors))],
@@ -60,8 +60,24 @@ def test_random_graph(vertices):
 
     plt.show()
 
+    return edge_av
 
+def test_range_of_graphs(start, end, config):
+    x_ax = []
+    y_ax = []
 
-test_random_graph(5)
+    for i in range(start, end):
+        x_ax.append(i)
+        y_ax.append(test_random_graph(i, config))
+
+    plt.show()
+    plt.figure()
+    plt.plot(x_ax, y_ax)
+    plt.title(f'Average nmr of edges per nmr of nodes ({config})')
+    plt.xlabel('Number of edges')
+    plt.ylabel('Number of nodes')
+    plt.show()
+
+test_range_of_graphs(2, 31, 30)
 
 
