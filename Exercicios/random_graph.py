@@ -24,7 +24,7 @@ def create_random_graph(vertices):
     return (len(edges), G)
 
 
-def test_random_graph(vertices, config):
+def test_random_graph(vertices, config, plots):
     out = [create_random_graph(vertices) for _ in range(config)]
     colors = ['blue', 'black', 'red', 'pink', 'green', 'orange', 'purple', 'yellow']
     edges = []
@@ -35,40 +35,41 @@ def test_random_graph(vertices, config):
 
     i = 1
     edge_av = sum(edges) / len(edges)
-    plt.figure(figsize=(22,13))
-    plt.axis("off")
-    plt.title(f"{vertices} Nodes (Average edges created: {edge_av:.3f})")
-    for graph in graphs:
-        options = {
-            'node_color': colors[i % (len(colors))],
-            'node_size': 80,
-            'width': 3,
-        }
-        sub = plt.subplot(5, 6, i)
-        nx.draw(graph, **options)
-        i += 1
+    if plots:
+        plt.figure(figsize=(22,13))
+        plt.axis("off")
+        plt.title(f"{vertices} Nodes (Average edges created: {edge_av:.3f})")
+        for graph in graphs:
+            options = {
+                'node_color': colors[i % (len(colors))],
+                'node_size': 80,
+                'width': 3,
+            }
+            sub = plt.subplot(5, 6, i)
+            nx.draw(graph, **options)
+            i += 1
 
-    plt.show()
+        plt.show()
 
-    plt.figure()
-    x_axis = [i for i in range(1, 31)]
+        plt.figure()
+        x_axis = [i for i in range(1, 31)]
 
-    plt.plot(x_axis, edges)
-    plt.title('Edges created per graph')
-    plt.xlabel('Graph')
-    plt.ylabel('Edges')
+        plt.plot(x_axis, edges)
+        plt.title('Edges created per graph')
+        plt.xlabel('Graph')
+        plt.ylabel('Edges')
 
-    plt.show()
+        plt.show()
 
     return edge_av
 
-def test_range_of_graphs(start, end, config):
+def test_range_of_graphs(start, end, config=30, plots=False):
     x_ax = []
     y_ax = []
 
     for i in range(start, end):
         x_ax.append(i)
-        y_ax.append(test_random_graph(i, config))
+        y_ax.append(test_random_graph(i, config, plots))
 
     plt.show()
     plt.figure()
