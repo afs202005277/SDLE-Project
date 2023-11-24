@@ -86,10 +86,8 @@ class Server:
         if cloud_db == []:
             print('list doesnt exists, create it')
             self.create_list(request)
-        cloud_db = self.db_management.retrieve_list(main_database_id, list_id)
 
         print(cloud_db)
-        changelogs = sorted(offline_changelog + cloud_db['changelog'], key=lambda x: x['timestamp'])
         self.db_management.apply_changelogs(cloud_db, offline_changelog)
         print(cloud_db)
 
