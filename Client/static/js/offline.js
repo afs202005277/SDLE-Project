@@ -316,6 +316,10 @@ class ShoppingList {
         }
     }
 
+    clearChangelog(){
+        this.changes = [];
+    }
+
     getId() {
         return this.list_id;
     }
@@ -470,10 +474,19 @@ addItemForm.addEventListener('submit', e => {
     else quantity = parseInt(quantity)
 
     if (newItem !== '') {
-        console.log(activeList.getId())
+        console.log(activeList.getHash())
+
+        const list_name = activeList.getHash()
         postReq(
             'http://localhost:6969/req/addToList',
             {list_id: activeList.getId(), item_name: newItem, quantity: quantity}
+        ).then(
+            () => { 
+                localStorage.setItem(`changelog_${list_name}`, []);
+                if(activeList.getHash() === list_name)
+                    activeList.clearChangelog()
+            },
+            () => {}
         )
 
         activeList.add(newItem, quantity);
