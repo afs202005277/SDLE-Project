@@ -210,10 +210,17 @@ def login_post():
 
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
-    socket.connect("tcp://localhost:5575")
-    data = {"type": "Login", "email": email, "password": password}
-    socket.send_json(data)
-    response = socket.recv_json()
+    socket.setsockopt(zmq.SNDTIMEO, 1000)  # Setting a send timeout of 1000 milliseconds
+    socket.setsockopt(zmq.IMMEDIATE, 1)
+
+
+    try:
+        socket.connect("tcp://localhost:5575")
+        data = {"type": "Login", "email": email, "password": password}
+        socket.send_json(data)
+        response = socket.recv_json()
+    except:
+        return render_template('login.html', error_message="Server Timeout")
 
     if "error" in response:
         return render_template('login.html', error_message=response["error"])
@@ -229,10 +236,16 @@ def register_post():
 
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
-    socket.connect("tcp://localhost:5575")
-    data = {"type": "Register", "email": email, "password": password}
-    socket.send_json(data)
-    response = socket.recv_json()
+    socket.setsockopt(zmq.SNDTIMEO, 1000)  # Setting a send timeout of 1000 milliseconds
+    socket.setsockopt(zmq.IMMEDIATE, 1)
+
+    try:
+        socket.connect("tcp://localhost:5575")
+        data = {"type": "Register", "email": email, "password": password}
+        socket.send_json(data)
+        response = socket.recv_json()
+    except:
+        return render_template('register.html', error_message="Server Timeout")
 
     if "error" in response:
         return render_template('register.html', error_message=response["error"])

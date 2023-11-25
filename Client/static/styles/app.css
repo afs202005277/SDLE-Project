@@ -75,7 +75,10 @@ canvas{
   height: 100%;
   position: absolute;
   background-color: #FFBB5C;
+  color: white;
   display: flex;
+  flex-direction: column;
+  gap: 2em;
   justify-content: center;
   align-items: center;
   z-index: 4;
