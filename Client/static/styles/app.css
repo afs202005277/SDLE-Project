@@ -1,5 +1,3 @@
-
-
 .container {
     margin-top: 10rem;
   }
@@ -58,4 +56,39 @@ canvas{
   background-size: cover;
   background-position: 50% 50%;
   background-repeat: no-repeat;
+}
+
+.loader {
+  border: 16px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 16px solid #FF9B50;
+  width: 120px;
+  height: 120px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 0.3s linear infinite;
+  z-index: 5;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+.overlay {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  background-color: #FFBB5C;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 4;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
