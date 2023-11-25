@@ -119,7 +119,7 @@ async function cloudSync() {
         localStorage.setItem(`changelog_${response['list_name']}`, [])
         localStorage.setItem(activeList.getHash(), JSON.stringify(response['items']));
 
-        activeList = new ShoppingList(activeList.getHash(), response['id'])
+        activeList = new ShoppingList(activeList.getHash())
     } else {
         console.log('shopping list doesnt exists in the cloud, creating...')
         const response = await postReq(
@@ -178,7 +178,7 @@ class ShoppingLists {
         localStorage.setItem(name + "_id", list['id'])
         localStorage.setItem(`changelog_${name}`, JSON.stringify(list['changelog']))
 
-        activeList = new ShoppingList(name, list['id'])
+        activeList = new ShoppingList(name)
         this.save()
     }
 
@@ -274,7 +274,7 @@ addListForm.addEventListener('submit', async e => {
                     lists.addSharedList(json['data'])
                 } else if (json['status'] === 'created') {
                     localStorage.setItem(newList + "_id", json['data']['list_id'])
-                    activeList.render()
+                    activeList = new ShoppingList(activeList.getHash())
                 } else {
                     console.log("Unknown status!")
                 }
@@ -296,20 +296,12 @@ addListForm.addEventListener('submit', async e => {
  **/
 
 class ShoppingList {
-    constructor(hash, id) {
+    constructor(hash) {
         if (hash == null) {
             document.querySelector('h3').innerHTML = `You don't have any lists, please create one.`
         } else {
             this.hash = hash
-            if (id !== undefined)
-                this.list_id = id
-            else {
-                fetch(`http://localhost:6969/req/list_id/${hash}`).then(
-                    r => r.text().then(responseText => {
-                        this.list_id = responseText;
-                    })
-                );
-            }
+            this.list_id = localStorage.getItem(hash + "_id")
             this.items = this.load();
             this.changes = this.changelog();
             this.render();
@@ -476,21 +468,23 @@ addItemForm.addEventListener('submit', e => {
     if (newItem !== '') {
         console.log(activeList.getHash())
 
+        activeList.add(newItem, quantity);
+        itemInput.value = '';
+
         const list_name = activeList.getHash()
         postReq(
             'http://localhost:6969/req/addToList',
             {list_id: activeList.getId(), item_name: newItem, quantity: quantity}
         ).then(
-            () => { 
+            r => { 
+                if(!r) return
+
                 localStorage.setItem(`changelog_${list_name}`, []);
                 if(activeList.getHash() === list_name)
                     activeList.clearChangelog()
             },
             () => {}
         )
-
-        activeList.add(newItem, quantity);
-        itemInput.value = '';
     }
 });
 
