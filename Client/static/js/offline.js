@@ -398,10 +398,10 @@ class ShoppingList {
             this.log({'operation': 'remove', 'item': item.name, 'timestamp': getTimestampInSeconds()})
             this.log({'operation': 'add', 'item': newName, 'quantity': item.quantity, 'timestamp': getTimestampInSeconds()})
         } else {
+            this.log({'operation': 'rename', 'item': item.name, 'newItem': newName, 'timestamp': getTimestampInSeconds()})
             this.modify(() => {
                 item.name = newName;
             })
-            this.log({'operation': 'rename', 'item': newName, 'quantity': item.quantity, 'timestamp': getTimestampInSeconds()})
         }
     }
 
