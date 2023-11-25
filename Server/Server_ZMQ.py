@@ -75,57 +75,35 @@ class Server:
         return hashlib.md5(list_str).hexdigest()
 
     def synchronize(self, request):
-        print(request)
-
         list_id = request['list_id']
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
-
         offline_changelog = request['changelog']
 
-        cloud_db = self.db_management.retrieve_list(main_database_id, list_id)
-        if cloud_db == []:
+        if not self.db_management.add_changelogs(main_database_id, list_id, offline_changelog):
             print('list doesnt exists, create it')
             self.create_list(request)
 
-        print(cloud_db)
-        self.db_management.apply_changelogs(cloud_db, offline_changelog)
-        print(cloud_db)
-
-        self.db_management.insert_list(main_database_id, cloud_db)
-
-        print('sync request')
-        return json.dumps(cloud_db)
+        list_object = self.db_management.retrieve_list(main_database_id, list_id)
+        return json.dumps(list_object)
 
     def add_item(self, request):
         list_id = request['list_id']
-        print("ADD ITEM")
-        print(list_id)
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
-        list_object = self.db_management.retrieve_list(main_database_id, list_id)
-        if not list_object:
+        log = {'timestamp': time.time(), 'operation': 'add', 'item': request['name'], 'quantity': request['quantity']}
+        if not self.db_management.add_changelogs(main_database_id, list_id, [log]):
             print("List not Found")
             return self.__fail()
 
-        log = {'timestamp': time.time(), 'operation': 'add', 'item': request['name'], 'quantity': request['quantity']}
-        list_object['changelog'].append(log)
-
-        self.db_management.replace_list(main_database_id, list_object)
         return self.__success()
 
     def buy_item(self, request):
         list_id = request['list_id']
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
-        list_object = self.db_management.retrieve_list(main_database_id, list_id)
-        if not list_object:
+        log = {'timestamp': time.time(), 'operation': 'buy', 'item': request['name'], 'quantity': request['quantity']}
+        if not self.db_management.add_changelogs(main_database_id, list_id, [log]):
             print("List not Found")
             return self.__fail()
 
-        log = {'timestamp': time.time(), 'operation': 'buy', 'item': request['name'], 'quantity': request['quantity']}
-        list_object['changelog'].append(log)
-
-        self.db_management.replace_list(main_database_id, list_object)
-        print("Success!")
-        print(self.db_management.retrieve_list(main_database_id, list_id))
         return self.__success()
 
     # no caso do client adicionar uma shared list, o id da lista vem no list["name"]
@@ -156,33 +134,21 @@ class Server:
     def delete_item(self, request):
         list_id = request['list_id']
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
-        list_object = self.db_management.retrieve_list(main_database_id, list_id)
-        if not list_object:
+        log = {'timestamp': time.time(), 'operation': 'delete', 'item': request['name']}
+        if not self.db_management.add_changelogs(main_database_id, list_id, [log]):
             print("List not Found")
             return self.__fail()
 
-        log = {'timestamp': time.time(), 'operation': 'delete', 'item': request['name']}
-        list_object['changelog'].append(log)
-
-        self.db_management.replace_list(main_database_id, list_object)
-        print("Success!")
-        print(self.db_management.retrieve_list(main_database_id, list_id))
         return self.__success()
 
     def rename_item(self, request):
         list_id = request['list_id']
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
-        list_object = self.db_management.retrieve_list(main_database_id, list_id)
-        if not list_object:
+        log = {'timestamp': time.time(), 'operation': 'rename', 'item': request['name'], 'newItem': request['newName']}
+        if not self.db_management.add_changelogs(main_database_id, list_id, [log]):
             print("List not Found")
             return self.__fail()
 
-        log = {'timestamp': time.time(), 'operation': 'rename', 'item': request['name'], 'newItem': request['newName']}
-        list_object['changelog'].append(log)
-
-        self.db_management.replace_list(main_database_id, list_object)
-        print("Success!")
-        print(self.db_management.retrieve_list(main_database_id, list_id))
         return self.__success()
 
     def get_user_email(self, token):

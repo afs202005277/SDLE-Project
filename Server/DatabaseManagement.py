@@ -191,7 +191,7 @@ class DatabaseManagement:
                         item['quantity'] -= int(change['quantity'])
                         break
                 else:
-                    items.append({'name': change['item'], 'quantity': -change['quantity']})
+                    items.append({'name': change['item'], 'quantity': -int(change['quantity'])})
             elif change['operation'] == 'rename':
                 items = list_object['items']
                 renamed = {}
@@ -218,6 +218,26 @@ class DatabaseManagement:
             if item['quantity'] <= 0:
                 list_object['items'].remove(item)
 
+    def add_changelogs(self, main_database_id, list_id, changelogs):
+        main_database_id = self.__find_real_main_db_id(main_database_id)
+        dbs = self.__get_db_and_replicas(main_database_id)
+
+        for db in dbs:
+            retrieved_temp = self.__retrieve_list(db, list_id)
+            if retrieved_temp is not None:
+                list_object = json.loads(retrieved_temp.decode('utf-8'))
+                break
+        else:
+            return False
+
+        if list_object is not None:
+            list_object['changelog'] += changelogs
+            for db in dbs:
+                self.__insert_list(db, list_object)
+
+        return True
+
+
     def merge_list(self, main_database_id, list_id):
         given_database_id = main_database_id
         main_database_id = self.__find_real_main_db_id(main_database_id)
@@ -241,6 +261,8 @@ class DatabaseManagement:
                 if l_obj_temp is not None:
                     changelogs_together += l_obj_temp['changelog']
 
+            changelogs_t_temp = set(frozenset(d.items()) for d in changelogs_together)
+            changelogs_together = [dict(f) for f in changelogs_t_temp]
             changelogs_together = sorted(changelogs_together, key=lambda x: x['timestamp'])
             self.apply_changelogs(list_object, changelogs_together)
 
