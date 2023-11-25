@@ -201,6 +201,8 @@ class DatabaseManagement:
                         renamed = item
                         items.remove(item)
                         break
+                else:
+                    continue
 
                 for item in items:
                     if item['name'] == change['newItem']:
