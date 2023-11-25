@@ -131,6 +131,7 @@ async function cloudSync() {
         )
         
         localStorage.setItem(response['list_name'] + "_id", response['list_id'])
+        localStorage.setItem(`changelog_${response['list_name']}`, [])
     }
 }
 
@@ -202,7 +203,9 @@ class ShoppingLists {
     delete(item, index) {
         this.lists.splice(index, 1);
         localStorage.removeItem(item)
-
+        localStorage.removeItem(`changelog_${item}`);
+        localStorage.removeItem(`${item}_id`);
+        
         postReq(
             'http://localhost:6969/req/removeList',
             {list_name: item}
@@ -362,9 +365,19 @@ class ShoppingList {
     }
 
     delete(index, quantity) {
+        const list_name = activeList.getHash()
         postReq(
             'http://localhost:6969/req/buyItem',
             {list_id: activeList.getId(), name: this.items[index].name, quantity: quantity}
+        ).then(
+            r => { 
+                if(!r) return
+
+                localStorage.setItem(`changelog_${list_name}`, []);
+                if(activeList.getHash() === list_name)
+                    activeList.clearChangelog()
+            },
+            () => {}
         )
 
         if (quantity < 1) return
@@ -385,9 +398,19 @@ class ShoppingList {
     rename(item, newName) {
         if (newName === '' || item.name === newName) return
 
+        const list_name = activeList.getHash()
         postReq(
             'http://localhost:6969/req/renameItem',
             {list_id: activeList.getId(), item_name: item.name, new_item_name: newName}
+        ).then(
+            r => { 
+                if(!r) return
+
+                localStorage.setItem(`changelog_${list_name}`, []);
+                if(activeList.getHash() === list_name)
+                    activeList.clearChangelog()
+            },
+            () => {}
         )
 
         if (this.items.map(i => i.name).includes(newName)) {
@@ -398,10 +421,10 @@ class ShoppingList {
             this.log({'operation': 'remove', 'item': item.name, 'timestamp': getTimestampInSeconds()})
             this.log({'operation': 'add', 'item': newName, 'quantity': item.quantity, 'timestamp': getTimestampInSeconds()})
         } else {
+            this.log({'operation': 'rename', 'item': item.name, 'newItem': newName, 'timestamp': getTimestampInSeconds()})
             this.modify(() => {
                 item.name = newName;
             })
-            this.log({'operation': 'rename', 'item': newName, 'quantity': item.quantity, 'timestamp': getTimestampInSeconds()})
         }
     }
 
