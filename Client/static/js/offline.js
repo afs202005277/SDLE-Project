@@ -1,5 +1,22 @@
 let activeList = null;
 
+window.addEventListener("DOMContentLoaded", function () {
+    const loader = document.querySelector(".loader");
+    const overlay = this.document.querySelector(".overlay");
+    setTimeout(() => {
+      overlay.style.opacity = 0;
+      overlay.style.visibility = 'hidden';
+      loader.style.opacity = 0;
+      loader.style.visibility = 'hidden';
+    }, 500);
+    window.addEventListener("beforeunload", function () {
+      overlay.style.opacity = 1;
+      overlay.style.visibility = 'visible';
+      loader.style.opacity = 1;
+      loader.style.visibility = 'visible';
+    });
+  },);
+
 function createItem(name, quantity) {
     return {
         'name': name,
