@@ -1,4 +1,5 @@
 let activeList = null;
+let disconnectFromCloud = false;
 
 window.addEventListener("DOMContentLoaded", function () {
     const loader = document.querySelector(".loader");
@@ -25,6 +26,9 @@ function createItem(name, quantity) {
 }
 
 async function postReq(url, data) {
+    console.log('postreq')
+    if(disconnectFromCloud) throw "Disconnected from cloud";
+
     try {
         const response = await fetch(url, {
             method: 'POST',
@@ -168,6 +172,16 @@ document.getElementById('helper_clear').addEventListener('click', () => {
 })
 
 document.getElementById('helper_sync').addEventListener('click', cloudSync)
+
+document.getElementById('helper_disc').addEventListener('click', () => {
+    if(disconnectFromCloud)
+        document.getElementById('helper_disc').textContent = 'Disconnect from cloud'
+    else
+        document.getElementById('helper_disc').textContent = 'Connect to cloud'
+
+    document.getElementById('disconnect-icon').classList.toggle('d-none', disconnectFromCloud)
+    disconnectFromCloud = !disconnectFromCloud
+})
 
 /**
  *
