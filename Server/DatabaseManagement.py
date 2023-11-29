@@ -56,9 +56,10 @@ class DatabaseManagement:
             self.__delete_list(db, list_id)
 
     def retrieve_list(self, main_database_id, list_id):
+        original_db_id = main_database_id
         main_database_id = self.__find_real_main_db_id(main_database_id)
         self.database_connections_num_requests[main_database_id] += 1
-        res = self.merge_list(main_database_id, list_id)
+        res = self.merge_list(original_db_id, list_id)
         if res is None:
             return []
         return res
