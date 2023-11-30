@@ -1,12 +1,12 @@
 #!/bin/bash
 
-cd Client && flask --app __init__.py --debug run -p 6969 &
+flask --app __init__.py --debug run -p 6969 &
 flask_pid=$!
 echo "$flask_pid" > process_pids.txt
 
 cd ..
 
-cd Server && python3 proxy.py &
+python3 proxy.py &
 proxy_pid=$!
 echo "$proxy_pid" >> process_pids.txt
 

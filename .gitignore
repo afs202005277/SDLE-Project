@@ -24,3 +24,4 @@ kill.sh
 process_pids.txt
 teste/
 log.*
+/databases/berkeley/
