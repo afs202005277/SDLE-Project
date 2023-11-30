@@ -18,6 +18,18 @@ class DatabaseManagement:
         self.__new_initialize_databases()
         self.num_replicas = 2
 
+    def startup_merge_sync(self, db_id):
+        for i in self.database_connections.keys():
+            if i != db_id and self.database_connections_state[i]:
+                for l in self.__retrieve_lists(i):
+                    list_id = l[0].decode('utf-8')
+                    from HashingRing import HashingRing
+                    hashing_ring = HashingRing(db_manager.get_num_connections())
+                    main_db_id = self.__find_real_main_db_id(hashing_ring.find_main_database_id(list_id))
+                    all_replicas_dbs = self.__get_db_and_replicas(main_db_id)
+                    if db_id in all_replicas_dbs:
+                        self.merge_list(main_db_id, list_id)
+
     def update_num_lists(self):
         for i in self.database_connections.keys():
             self.database_connections_num_lists[i] = len(self.__retrieve_lists(i))

@@ -258,6 +258,7 @@ class DBTerminalManagement(threading.Thread):
                         print(f"The database with the ID {provided_id} was already enabled.")
                     else:
                         server.db_management.database_connections_state[provided_id] = True
+                        server.db_management.startup_merge_sync(provided_id)
                         print(f"Successfully enabled database with the ID {provided_id}")
                 else:
                     if not server.db_management.database_connections_state[provided_id]:
