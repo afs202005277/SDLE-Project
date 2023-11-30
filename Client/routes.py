@@ -114,6 +114,7 @@ def add_to_list():
 @bp.route('/req/removeList', methods=['POST'])
 def remove_list():
     data = request.get_json()
+    print(data)
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")

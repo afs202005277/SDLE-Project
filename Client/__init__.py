@@ -1,7 +1,7 @@
 import os
 from flask import Flask
 from flask_session import Session
-from routes import bp
+from .routes import bp
 
 def create_app():
     app = Flask(__name__, instance_relative_config=True)
