@@ -33,18 +33,6 @@ backend is working. frontend is also working but the id only appears after reloa
 
 # FEITO
 
-5:
-- criar lista "disable" e partilhar
-- dar disable às dbs 4,5,6,7
-- ligar offline
-- adicionar 10 ketchup e 23 pao no browser q esta offline
-- dar disable à 8
-- no browser online, adicionar 5 maionese
-- fazer sync no q está online (dá list not found, o q faz sentido)
-- ligar db 8
-- fazer sync again
-- a maionese q está no cliente é apagada e n está presente em nenhum changelog na db (a maionese local n devia ser apagada, mas sim incluida no servidor)
-
 6:
 - criar lista "disable" e partilhar
 - dar disable às dbs 4,5,6,7
@@ -59,6 +47,8 @@ backend is working. frontend is also working but the id only appears after reloa
 - ligar todas as dbs (4, 5, 6, 7)
 - fazer sync
 - fodeu (todos os produtos desapareceram exceto a maionese): o merge n incluiu todas as instancias:
+
+# FEITO
 
 7:
 - criar lista em browser 1
