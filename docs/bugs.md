@@ -59,5 +59,15 @@ backend is working. frontend is also working but the id only appears after reloa
 - ligar todas as dbs (4, 5, 6, 7)
 - fazer sync
 - fodeu (todos os produtos desapareceram exceto a maionese): o merge n incluiu todas as instancias:
+
+7:
+- criar lista em browser 1
+- meter browser 2 offline
+- pegar no sharing id do browser 1 e tentar meter no browser 2
+- não dá....
+
+(em backend, eu acho que funciona tudo ao meter online e dar sync. acho que a questão é só mesmo frontend.)
+
+
 ![img](bug_merge.png)
 
