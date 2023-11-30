@@ -189,6 +189,8 @@ def list_id(list_name):
 @bp.route('/req/synchronize/<list_id>', methods=['POST'])
 def synchronize(list_id):
     data = request.get_json()
+    print(data)
+    print(list_id)
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")

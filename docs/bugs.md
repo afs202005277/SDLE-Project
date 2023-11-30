@@ -14,6 +14,12 @@ Traceback (most recent call last):
     request_id_hash = int(request_id_hash, 16)
 ValueError: invalid literal for int() with base 16: 'null'
 ```
+
+# SOLUTION
+
+backend is working. frontend is also working but the id only appears after reloading the page.
+
+
 2: crio uma lista com merdas, partilho a lista, outro gajo adiciona cenas, faço sync: os items adicionados aparcem mas o contador à direita do nome da lista n atualiza.
 ![img](bug_counter.png)
 

@@ -150,8 +150,9 @@ async function cloudSync() {
                 'changes': activeList.changes
             }
         )
-        
-        localStorage.setItem(response['list_name'] + "_id", response['list_id'])
+
+        console.log(response);
+        localStorage.setItem(response['list_name'] + "_id", response['id'])
         localStorage.setItem(`changelog_${response['list_name']}`, [])
     }
 }
