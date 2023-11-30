@@ -5,18 +5,18 @@ window.addEventListener("DOMContentLoaded", function () {
     const loader = document.querySelector(".loader");
     const overlay = this.document.querySelector(".overlay");
     setTimeout(() => {
-      overlay.style.opacity = 0;
-      overlay.style.visibility = 'hidden';
-      loader.style.opacity = 0;
-      loader.style.visibility = 'hidden';
+        overlay.style.opacity = 0;
+        overlay.style.visibility = 'hidden';
+        loader.style.opacity = 0;
+        loader.style.visibility = 'hidden';
     }, 500);
     window.addEventListener("beforeunload", function () {
-      overlay.style.opacity = 1;
-      overlay.style.visibility = 'visible';
-      loader.style.opacity = 1;
-      loader.style.visibility = 'visible';
+        overlay.style.opacity = 1;
+        overlay.style.visibility = 'visible';
+        loader.style.opacity = 1;
+        loader.style.visibility = 'visible';
     });
-  },);
+},);
 
 function createItem(name, quantity) {
     return {
@@ -26,8 +26,7 @@ function createItem(name, quantity) {
 }
 
 async function postReq(url, data) {
-    console.log('postreq')
-    if(disconnectFromCloud) throw "Disconnected from cloud";
+    if (disconnectFromCloud) throw "Disconnected from cloud";
 
     try {
         const response = await fetch(url, {
@@ -114,15 +113,15 @@ function bit_rol(d, _) {
 
 async function cloudSync() {
     // We arent inside a list
-    if(!activeList.getHash()) return
+    if (!activeList.getHash()) return
 
     // The list has a ID? (it doesnt has a ID if never got syncronized)
-    if(activeList.getId()){
+    if (activeList.getId()) {
         let response = await fetch(`http://localhost:6969/req/cloudHash/${activeList.getId()}`)
         let cloudHash = await response.text()
         let localHash = MD5(`{list_name:${activeList.hash},items:${JSON.stringify(activeList.items).replaceAll('\"', '')}}`)
 
-        if(cloudHash == localHash){
+        if (cloudHash == localHash) {
             console.log('shopping list is syncronized.')
             return
         }
@@ -179,7 +178,7 @@ document.getElementById('helper_clear').addEventListener('click', () => {
 document.getElementById('helper_sync').addEventListener('click', cloudSync)
 
 document.getElementById('helper_disc').addEventListener('click', () => {
-    if(disconnectFromCloud)
+    if (disconnectFromCloud)
         document.getElementById('helper_disc').textContent = 'Disconnect from cloud'
     else
         document.getElementById('helper_disc').textContent = 'Connect to cloud'
@@ -230,7 +229,7 @@ class ShoppingLists {
 
         this.lists.push(name)
         localStorage.setItem(name, [])
-        if(list_id) localStorage.setItem(name + "_id", list_id)
+        if (list_id) localStorage.setItem(name + "_id", list_id)
 
         activeList = new ShoppingList(name)
         this.save()
@@ -238,14 +237,13 @@ class ShoppingLists {
 
     delete(item, index) {
         this.lists.splice(index, 1);
+        postReq(
+            'http://localhost:6969/req/removeList',
+            {list_id: localStorage.getItem(`${item}_id`)}
+        )
         localStorage.removeItem(item)
         localStorage.removeItem(`changelog_${item}`);
         localStorage.removeItem(`${item}_id`);
-        
-        postReq(
-            'http://localhost:6969/req/removeList',
-            {list_name: item}
-        )
 
         if (activeList.getHash() === item)
             activeList = new ShoppingList(this.getFirst())
@@ -347,7 +345,7 @@ class ShoppingList {
         }
     }
 
-    clearChangelog(){
+    clearChangelog() {
         this.changes = [];
     }
 
@@ -406,25 +404,35 @@ class ShoppingList {
             'http://localhost:6969/req/buyItem',
             {list_id: activeList.getId(), name: this.items[index].name, quantity: quantity}
         ).then(
-            r => { 
-                if(!r) return
+            r => {
+                if (!r) return
 
                 localStorage.setItem(`changelog_${list_name}`, []);
-                if(activeList.getHash() === list_name)
+                if (activeList.getHash() === list_name)
                     activeList.clearChangelog()
             },
-            () => {}
+            () => {
+            }
         )
 
         if (quantity < 1) return
-        else if (quantity < this.items[index].quantity){
-            this.log({'operation': 'buy', 'item': this.items[index].name, 'quantity': quantity, 'timestamp': getTimestampInSeconds()})
+        else if (quantity < this.items[index].quantity) {
+            this.log({
+                'operation': 'buy',
+                'item': this.items[index].name,
+                'quantity': quantity,
+                'timestamp': getTimestampInSeconds()
+            })
             this.modify(() => {
                 this.items[index].quantity -= quantity
             })
-        }
-        else{
-            this.log({'operation': 'buy', 'item': this.items[index].name, 'quantity': this.items[index].quantity, 'timestamp': getTimestampInSeconds()})
+        } else {
+            this.log({
+                'operation': 'buy',
+                'item': this.items[index].name,
+                'quantity': this.items[index].quantity,
+                'timestamp': getTimestampInSeconds()
+            })
             this.modify(() => {
                 this.items.splice(index, 1);
             })
@@ -439,14 +447,15 @@ class ShoppingList {
             'http://localhost:6969/req/renameItem',
             {list_id: activeList.getId(), item_name: item.name, new_item_name: newName}
         ).then(
-            r => { 
-                if(!r) return
+            r => {
+                if (!r) return
 
                 localStorage.setItem(`changelog_${list_name}`, []);
-                if(activeList.getHash() === list_name)
+                if (activeList.getHash() === list_name)
                     activeList.clearChangelog()
             },
-            () => {}
+            () => {
+            }
         )
 
         if (this.items.map(i => i.name).includes(newName)) {
@@ -455,9 +464,19 @@ class ShoppingList {
                 this.items = this.items.filter(i => i.name !== item.name)
             })
             this.log({'operation': 'remove', 'item': item.name, 'timestamp': getTimestampInSeconds()})
-            this.log({'operation': 'add', 'item': newName, 'quantity': item.quantity, 'timestamp': getTimestampInSeconds()})
+            this.log({
+                'operation': 'add',
+                'item': newName,
+                'quantity': item.quantity,
+                'timestamp': getTimestampInSeconds()
+            })
         } else {
-            this.log({'operation': 'rename', 'item': item.name, 'newItem': newName, 'timestamp': getTimestampInSeconds()})
+            this.log({
+                'operation': 'rename',
+                'item': item.name,
+                'newItem': newName,
+                'timestamp': getTimestampInSeconds()
+            })
             this.modify(() => {
                 item.name = newName;
             })
@@ -535,14 +554,15 @@ addItemForm.addEventListener('submit', e => {
             'http://localhost:6969/req/addToList',
             {list_id: activeList.getId(), item_name: newItem, quantity: quantity}
         ).then(
-            r => { 
-                if(!r) return
+            r => {
+                if (!r) return
 
                 localStorage.setItem(`changelog_${list_name}`, []);
-                if(activeList.getHash() === list_name)
+                if (activeList.getHash() === list_name)
                     activeList.clearChangelog()
             },
-            () => {}
+            () => {
+            }
         )
     }
 });
