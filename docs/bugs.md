@@ -26,6 +26,8 @@ backend is working. frontend is also working but the id only appears after reloa
 3: crio uma lista e partilho com outro gajo: a lista aparece replicada em 5 dbs.
 ![img](bug_replication.png)
 
+# FEITO
+
 4: contador do numero de listas está avariado (operacoes várias de adicionar listas com dbs desligadas e assim):
 ![img](bug_list.png)
 
