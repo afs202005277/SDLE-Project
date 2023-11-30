@@ -18,6 +18,10 @@ class DatabaseManagement:
         self.__new_initialize_databases()
         self.num_replicas = 2
 
+    def update_num_lists(self):
+        for i in self.database_connections.keys():
+            self.database_connections_num_lists[i] = len(self.__retrieve_lists(i))
+
     @staticmethod
     def get_id(list_name, user_email):
         md5 = hashlib.md5()
@@ -84,8 +88,6 @@ class DatabaseManagement:
             self.database_connections[db_id] = db
             self.database_connections_state[db_id] = True
             self.database_connections_num_requests[db_id] = 0
-            self.database_connections_num_lists[db_id] = len(
-                    self.__retrieve_lists(db_id))
 
     def create_database(self):
         new_db_id = max(self.database_connections.keys()) + 1
@@ -96,7 +98,6 @@ class DatabaseManagement:
         self.database_connections[new_db_id] = db
         self.database_connections_state[new_db_id] = True
         self.database_connections_num_requests[new_db_id] = 0
-        self.database_connections_num_lists[new_db_id] = 0
         return new_db_id
 
     def __exists_list(self, database_id, list_id):
@@ -107,9 +108,6 @@ class DatabaseManagement:
         database = self.database_connections[main_database_id]
         database.put(list_object['id'].encode('utf-8'), json.dumps(list_object).encode('utf-8'), txn=txn)
         txn.commit()
-
-        if self.__exists_list(main_database_id, list_object['id']):
-            self.database_connections_num_lists[main_database_id] += 1
 
     def __retrieve_list(self, database_id, list_id):
         list_id = str(list_id)
@@ -145,7 +143,6 @@ class DatabaseManagement:
         except:
             print("Couldn't delete list")
         txn.commit()
-        self.database_connections_num_lists[main_database_id] -= 1
 
     def __begin_transaction(self):
         txn = self.env.txn_begin()

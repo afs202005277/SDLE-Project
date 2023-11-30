@@ -31,6 +31,8 @@ backend is working. frontend is also working but the id only appears after reloa
 4: contador do numero de listas está avariado (operacoes várias de adicionar listas com dbs desligadas e assim):
 ![img](bug_list.png)
 
+# FEITO
+
 5:
 - criar lista "disable" e partilhar
 - dar disable às dbs 4,5,6,7

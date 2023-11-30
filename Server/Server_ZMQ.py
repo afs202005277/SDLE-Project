@@ -269,6 +269,7 @@ class DBTerminalManagement(threading.Thread):
             elif command == "printlists":
                 server.db_management.print_all_lists()
             elif command == "list":
+                server.db_management.update_num_lists()
                 db_ids = list(server.db_management.database_connections.keys())
                 db_states = ["ONLINE" if server.db_management.database_connections_state[key] else "OFFLINE" for key in
                              db_ids]
