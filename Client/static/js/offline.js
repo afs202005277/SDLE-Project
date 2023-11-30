@@ -140,6 +140,8 @@ async function cloudSync() {
         localStorage.setItem(`changelog_${response['list_name']}`, [])
         localStorage.setItem(activeList.getHash(), JSON.stringify(response['items']));
 
+        document.getElementById('id').textContent = response['id']
+
         activeList = new ShoppingList(activeList.getHash())
     } else {
         console.log('shopping list doesnt exists in the cloud, creating...')
@@ -154,6 +156,8 @@ async function cloudSync() {
         console.log(response);
         localStorage.setItem(response['list_name'] + "_id", response['id'])
         localStorage.setItem(`changelog_${response['list_name']}`, [])
+
+        document.getElementById('id').textContent = response['id']
     }
 }
 
