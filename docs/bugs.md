@@ -68,6 +68,8 @@ backend is working. frontend is also working but the id only appears after reloa
 
 (em backend, eu acho que funciona tudo ao meter online e dar sync. acho que a questão é só mesmo frontend.)
 
+8:
+- não dá para apagar da BD listas atraves do frontend....
 
 ![img](bug_merge.png)
 
