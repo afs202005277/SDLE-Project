@@ -276,10 +276,11 @@ class DatabaseManagement:
     def search_list(self, list_id):
         # list_id = int(list_id, 16 if hexadecimal else 10)
         for i in range(self.get_num_connections()):
-            for l in self.__retrieve_lists(i):
-                if l[0].decode('utf-8') == list_id:
-                    res = json.loads(l[1].decode('utf-8'))
-                    return res
+            if self.database_connections_state[i]:
+                for l in self.__retrieve_lists(i):
+                    if l[0].decode('utf-8') == list_id:
+                        res = json.loads(l[1].decode('utf-8'))
+                        return res
         return None
 
 

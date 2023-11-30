@@ -85,8 +85,7 @@ class Server:
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
 
         if not self.db_management.add_changelogs(main_database_id, list_id, offline_changelog):
-            print('list doesnt exists, rerun function')
-            self.synchronize(request)
+            print('list doesnt exists')
 
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
         return json.dumps(list_object)
