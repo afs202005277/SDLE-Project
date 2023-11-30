@@ -23,11 +23,12 @@ class DatabaseManagement:
             if i != db_id and self.database_connections_state[i]:
                 for l in self.__retrieve_lists(i):
                     list_id = l[0].decode('utf-8')
+                    list_object = json.loads(l[1].decode('utf-8'))
                     from HashingRing import HashingRing
                     hashing_ring = HashingRing(db_manager.get_num_connections())
-                    main_db_id = self.__find_real_main_db_id(hashing_ring.find_main_database_id(list_id))
-                    all_replicas_dbs = self.__get_db_and_replicas(main_db_id)
-                    if db_id in all_replicas_dbs:
+                    main_db_id = hashing_ring.find_main_database_id(list_id)
+                    if db_id == main_db_id:
+                        self.__insert_list(db_id, list_object)
                         self.merge_list(main_db_id, list_id)
 
     def update_num_lists(self):
