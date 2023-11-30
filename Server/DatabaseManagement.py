@@ -25,7 +25,7 @@ class DatabaseManagement:
                     list_id = l[0].decode('utf-8')
                     list_object = json.loads(l[1].decode('utf-8'))
                     from HashingRing import HashingRing
-                    hashing_ring = HashingRing(db_manager.get_num_connections())
+                    hashing_ring = HashingRing(self.get_num_connections())
                     main_db_id = hashing_ring.find_main_database_id(list_id)
                     if db_id == main_db_id:
                         self.__insert_list(db_id, list_object)
