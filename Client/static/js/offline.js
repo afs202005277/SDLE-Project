@@ -36,6 +36,7 @@ function loadIcons() {
     const icons = document.querySelectorAll('i')
 
     for (let i = 0; i < icons.length; i++) {
+        if (icons[i].id == 'disconnect-icon') continue;
         icons[i].addEventListener('mouseover', function () {
             icons[i].style.color = "#C63D2F"
         })

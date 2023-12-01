@@ -136,3 +136,22 @@ canvas{
   transition: all 0.25s;
 }
 
+#disconnect-icon {
+  position: absolute;
+  left: 57%;
+  animation: disconnect 1.5s linear infinite;
+  color: white;
+}
+
+@keyframes disconnect {
+  25% {
+    color: white;
+  }
+  75% {
+    color: #C63D2F; 
+  }
+  100% {
+    color: white; 
+  }
+}
+
