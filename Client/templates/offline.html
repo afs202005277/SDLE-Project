@@ -18,15 +18,16 @@
         <h2>Loading...</h2>
       </div>
     <main>
-        <div class="w-100 bg-primary d-flex flex-row align-items-center justify-content-center">
-            <h1 class="bg-primary text-center p-2 fs-3 text-white">Shopping List</h1>
-            <i id="disconnect-icon" class="d-none fa-solid fa-plug-circle-xmark"></i>
+        <div class="w-100 bg-primary d-flex flex-row align-items-center">
+            <i id="sideMenuButton" class="fa-solid fa-bars fa-2xl whiteIcon" style="margin-left: 0.5em;"></i>
+            <h1 class="bg-primary text-center p-2 fs-3 text-white" style="margin: auto;">Shopping List</h1>
+            <i id="disconnect-icon" class="d-none fa-solid fa-plug-circle-xmark fa-2xl whiteIcon"></i>
             <a href="/logout"><button id="logout" class="btn btn-outline-danger">Logout</button></a>
         </div>
        
 
         <div id="wrapper">
-            <div class="bg-secondary d-flex flex-column align-items-center">
+            <div id="sideMenu" class="bg-secondary d-flex flex-column align-items-center" style="transition: all 0.25s ease; opacity: 0; width: 0px;">
                 <h2 class="mt-4">Lists</h2>
                 <ul id="others" class="list-group w-100 gap-3"></ul>
         
@@ -34,7 +35,7 @@
                     <label for="list" class="text-center">Create a Shopping List</label>
                     <div class="w-100 d-flex align-items-center justify-content-center">
                         <input type="text" class="form-control w-75" id="list" required placeholder="Enter URL/Name of the list...">
-                        <button class="btn" type="submit"><i class="fa-solid fa-right-to-bracket text-white"></i></button>
+                        <button class="btn" type="submit"><i class="fa-solid fa-right-to-bracket fa-xl whiteIcon"></i></button>
                     </div>
                 </form>       
                 
@@ -55,14 +56,14 @@
                     <div class="w-100 d-flex align-items-center justify-content-center">
                         <input type="text" class="form-control" id="item" required placeholder="Enter name of item...">
                         <input type="number" id="quantity" class="form-control w-25" value="1"/>
-                        <button class="btn" type="submit"><i class="fa-solid fa-right-to-bracket"></i></button>
+                        <button class="btn" type="submit"><i class="fa-solid fa-right-to-bracket blackIcon fa-xl"></i></button>
                     </div>
                 </form>
             
                 <h4 class="mt-3">Items</h4>
                 <ul id="shoppingList" class="w-100"></ul>
 
-                <h5 id="sharing-id">Sharing identification <span id="id"></span></h5>
+                <h5 id="sharing-id">Sharing identification<br><span id="id"></span></h5>
 
             </div>
         </div>
@@ -75,7 +76,7 @@
 
 <style>
     :root{
-        --bs-primary-rgb: 255, 180, 92;
+        --bs-primary-rgb: 255, 165, 75;
         --bs-secondary-rgb: 255, 187, 92;
     }
 

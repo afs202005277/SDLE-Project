@@ -18,6 +18,41 @@ window.addEventListener("DOMContentLoaded", function () {
     });
 },);
 
+document.querySelector('#sideMenuButton').addEventListener('click', function() {
+    const menu = document.querySelector('#sideMenu')
+
+    if (menu.style.opacity == 0) {
+        menu.style.opacity = 1
+        menu.style.width = "320px"
+        
+    }
+    else {
+        menu.style.opacity = 0
+        menu.style.width = "0px"
+    }
+})
+
+function loadIcons() {
+    const icons = document.querySelectorAll('i')
+
+    for (let i = 0; i < icons.length; i++) {
+        icons[i].addEventListener('mouseover', function () {
+            icons[i].style.color = "#C63D2F"
+        })
+        icons[i].addEventListener('mouseleave', function () {
+            if (icons[i].classList.contains('whiteIcon')) {
+                icons[i].style.color = "#fff"
+            }
+            else {
+                icons[i].style.color = "#000"
+            }
+            
+        })
+    }
+}
+
+loadIcons()
+
 function createItem(name, quantity) {
     return {
         'name': name,
@@ -266,7 +301,7 @@ class ShoppingLists {
                 <span>${item}</span>
                 <div class="d-flex gap-2 align-items-center">
                     <span class="badge bg-primary rounded-pill">${quantity}</span>
-                    <i class="fa-solid fa-delete-left"></i>
+                    <i class="fa-solid fa-delete-left whiteIcon"></i>
                 </div>
             `
             li.querySelector('span').addEventListener('click', () => {
@@ -280,6 +315,7 @@ class ShoppingLists {
 
             ul.appendChild(li);
         });
+        loadIcons()
     }
 
     getFirst() {
@@ -499,8 +535,8 @@ class ShoppingList {
                 <span>${item.name}</span>
                 <div class="d-flex gap-2 align-items-center">
                     <span class="badge bg-primary rounded-pill">${item.quantity}</span>
-                    <button type="button" class="btn delete" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="fa-solid fa-cart-shopping"></i></button>
-                    <button type="button" class="btn rename" data-bs-toggle="modal" data-bs-target="#renameModal"><i class="fa-solid fa-font"></i></button>
+                    <button type="button" class="btn delete" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="fa-solid fa-cart-shopping blackIcon"></i></button>
+                    <button type="button" class="btn rename" data-bs-toggle="modal" data-bs-target="#renameModal"><i class="fa-solid fa-font blackIcon"></i></button>
                 </div>
             `
 
@@ -527,6 +563,7 @@ class ShoppingList {
 
             shoppingList.appendChild(li);
         });
+        loadIcons()
         document.querySelector('#id').textContent = localStorage.getItem(this.hash + "_id");
     }
 }

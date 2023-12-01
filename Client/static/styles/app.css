@@ -120,3 +120,19 @@ canvas{
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+#shoppingList li {
+  background-color: #f8ce92;
+  border-radius: 20px;
+}
+
+.whiteIcon {
+  color:white; 
+  transition: all 0.25s;
+}
+
+.blackIcon {
+  color:black; 
+  transition: all 0.25s;
+}
+
