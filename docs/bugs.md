@@ -15,13 +15,12 @@ Traceback (most recent call last):
 ValueError: invalid literal for int() with base 16: 'null'
 ```
 
-# SOLUTION
-
-backend is working. frontend is also working but the id only appears after reloading the page.
-
+# FEITO
 
 2: crio uma lista com merdas, partilho a lista, outro gajo adiciona cenas, faço sync: os items adicionados aparcem mas o contador à direita do nome da lista n atualiza.
 ![img](bug_counter.png)
+
+# FEITO
 
 3: crio uma lista e partilho com outro gajo: a lista aparece replicada em 5 dbs.
 ![img](bug_replication.png)
@@ -57,6 +56,8 @@ backend is working. frontend is also working but the id only appears after reloa
 - não dá....
 
 (em backend, eu acho que funciona tudo ao meter online e dar sync. acho que a questão é só mesmo frontend.)
+
+# STAND-BY
 
 8:
 - não dá para apagar da BD listas atraves do frontend....
