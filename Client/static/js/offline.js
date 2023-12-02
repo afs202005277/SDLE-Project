@@ -178,6 +178,7 @@ async function cloudSync() {
         document.getElementById('id').textContent = response['id']
 
         activeList = new ShoppingList(activeList.getHash())
+        lists.render()
     } else {
         console.log('shopping list doesnt exists in the cloud, creating...')
         const response = await postReq(
@@ -248,10 +249,11 @@ class ShoppingLists {
         this.lists.push(name)
         localStorage.setItem(name, JSON.stringify(list['items']));
         localStorage.setItem(name + "_id", list['id'])
-        localStorage.setItem(`changelog_${name}`, JSON.stringify(list['changelog']))
+        localStorage.setItem(`changelog_${name}`, [])
 
         activeList = new ShoppingList(name)
         this.save()
+        cloudSync()
     }
 
     save() {
