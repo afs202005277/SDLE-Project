@@ -89,7 +89,7 @@ canvas{
   transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
 }
 
-.overlay {
+.overlay, #sync-overlay {
   width: 100%;
   height: 100%;
   position: absolute;
@@ -102,6 +102,11 @@ canvas{
   align-items: center;
   z-index: 4;
   transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+#sync-overlay{
+  background-color: rgba(.3, .3, .3, .5);
+  color: #E25E3E;
 }
 
 #logout {

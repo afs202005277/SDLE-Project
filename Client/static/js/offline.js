@@ -151,6 +151,8 @@ async function cloudSync() {
     // We arent inside a list
     if (!activeList.getHash()) return
 
+    document.getElementById("sync-overlay").classList.toggle('d-none', false)
+
     // The list has a ID? (it doesnt has a ID if never got syncronized)
     if (activeList.getId()) {
         let response = await fetch(`http://localhost:6969/req/cloudHash/${activeList.getId()}`)
@@ -159,6 +161,7 @@ async function cloudSync() {
 
         if (cloudHash == localHash) {
             console.log('shopping list is syncronized.')
+            document.getElementById("sync-overlay").classList.toggle('d-none', true)
             return
         }
 
@@ -195,6 +198,8 @@ async function cloudSync() {
 
         document.getElementById('id').textContent = response['id']
     }
+
+    document.getElementById("sync-overlay").classList.toggle('d-none', true)
 }
 
 function getTimestampInSeconds() {
