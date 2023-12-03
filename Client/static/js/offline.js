@@ -380,6 +380,8 @@ class ShoppingList {
     constructor(hash) {
         if (hash == null) {
             document.querySelector('h3').innerHTML = `You don't have any lists, please create one.`
+            document.getElementById('shoppingList').innerHTML = ''
+            document.getElementById('id').innerHTML = ''
         } else {
             this.hash = hash
             this.list_id = localStorage.getItem(hash + "_id")
