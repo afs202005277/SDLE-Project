@@ -301,6 +301,8 @@ class ShoppingLists {
         this.lists.forEach((item, index) => {
             const cache = localStorage.getItem(item)
             const list = cache !== '' ? JSON.parse(cache) : []
+            console.log(list)
+            console.log(cache)
             const quantity = list.reduce((acc, val) => acc + val.quantity, 0)
 
             const li = document.createElement('li');
@@ -382,6 +384,8 @@ class ShoppingList {
             document.querySelector('h3').innerHTML = `You don't have any lists, please create one.`
             document.getElementById('shoppingList').innerHTML = ''
             document.getElementById('id').innerHTML = ''
+            document.getElementById('id').innerHTML = ''
+            //if (document.querySelector('#sharing-id')) document.querySelector('#sharing-id').remove()
         } else {
             this.hash = hash
             this.list_id = localStorage.getItem(hash + "_id")
@@ -575,6 +579,7 @@ class ShoppingList {
         });
         loadIcons()
         document.querySelector('#id').textContent = localStorage.getItem(this.hash + "_id");
+        //if (document.querySelector('#sharing-link-id')) document.querySelector('#sharing-link-id').remove()
     }
 }
 
@@ -614,7 +619,35 @@ addItemForm.addEventListener('submit', e => {
     }
 });
 
+document.querySelector('#sharingButton').addEventListener('click', function() {
+    if (!document.querySelector('#sharing-link-id')) {
+        const link = document.createElement('span')
+        link.id = "sharing-link-id"
+        link.textContent = `${window.location.protocol}//${window.location.host}/home?sharedList=${document.querySelector('#id').textContent}`
+        document.querySelector('#sharing-id').appendChild(link)
+    }
+})
 
+
+
+if (window.location.href.includes('sharedList')) {
+    const newList = window.location.href.split('=')[1]
+    postReq(
+        'http://localhost:6969/req/createList',
+        {list_name: newList}
+    ).then(
+        json => {
+            if (json["status"] === 'existing') {
+                lists.addSharedList(json['data'])
+            } else if (json['status'] === 'created') {
+                localStorage.setItem(newList + "_id", json['data']['list_id'])
+                activeList = new ShoppingList(activeList.getHash())
+            } else {
+                console.log("Unknown status!")
+            }
+        }
+    )
+}
 /**
  *
  *
