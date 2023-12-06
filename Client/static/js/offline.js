@@ -203,7 +203,9 @@ async function cloudSync() {
 }
 
 function getTimestampInSeconds() {
-    return Math.floor(Date.now() / 1000)
+    // return Math.floor(Date.now() / 1000)
+    const date = new Date();
+    return Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds()) / 1000);
 }
 
 /*
