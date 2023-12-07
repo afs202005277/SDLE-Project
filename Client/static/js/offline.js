@@ -485,7 +485,7 @@ class ShoppingList {
                 'timestamp': getTimestampInSeconds()
             })
             this.modify(() => {
-                this.items.splice(index, 1);
+                this.items[index].quantity = 0;
             })
         }
     }
@@ -546,7 +546,17 @@ class ShoppingList {
         this.items.forEach((item, index) => {
             const li = document.createElement('li');
             li.classList = 'px-3 w-100 d-flex justify-content-between align-items-center'
-            li.innerHTML = `
+            li.style.height = "40px";
+            if (item.quantity == 0) {
+                li.innerHTML = `
+                <span style="text-decoration: line-through;">${item.name}</span>
+                <div class="d-flex gap-2 align-items-center">
+                    <span class="badge bg-primary rounded-pill">${item.quantity}</span>
+                </div>
+            `
+            }
+            else {
+                li.innerHTML = `
                 <span>${item.name}</span>
                 <div class="d-flex gap-2 align-items-center">
                     <span class="badge bg-primary rounded-pill">${item.quantity}</span>
@@ -554,7 +564,6 @@ class ShoppingList {
                     <button type="button" class="btn rename" data-bs-toggle="modal" data-bs-target="#renameModal"><i class="fa-solid fa-font blackIcon"></i></button>
                 </div>
             `
-
             li.querySelector('button.delete').addEventListener('click', () => {
                 document.querySelector('#deleteModal #quantity').value = item.quantity
                 let action = deleteModal.querySelector('.modal-action')
@@ -575,6 +584,7 @@ class ShoppingList {
                     this.rename(item, document.getElementById('newName').value)
                 })
             })
+            }
 
             shoppingList.appendChild(li);
         });
