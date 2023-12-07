@@ -66,7 +66,7 @@ class CRDT:
 
             elif (operation == 'remove') and (len(existingItem) > 0):
                 if entry['quantity'] >= existingItem[0]['quantity']:
-                    self.state['items'] = list(filter(lambda x: x != existingItem[0], self.state['items']))
+                    existingItem[0]['quantity'] = 0
                 else:
                     existingItem[0]['quantity'] -= entry['quantity']
 

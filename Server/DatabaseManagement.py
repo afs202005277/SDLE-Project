@@ -227,10 +227,6 @@ class DatabaseManagement:
                     if item['name'] == change['item']:
                         items.remove(item)
 
-        for item in list_object['items']:
-            if item['quantity'] <= 0:
-                list_object['items'].remove(item)
-
     def add_changelogs(self, main_database_id, list_id, changelogs):
         main_database_id = self.__find_real_main_db_id(main_database_id)
         dbs = self.__get_db_and_replicas(main_database_id)
