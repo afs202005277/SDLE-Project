@@ -438,7 +438,7 @@ class ShoppingList {
         if (this.items.map(i => i.name).includes(item)) {
             this.modify(() => {
                 this.items.filter(i => i.name === item)[0].quantity += quantity;
-                this.items = this.items.filter(i => i.quantity > 0)
+                this.items = this.items.filter(i => i.quantity >= 0)
             })
             this.log({'operation': 'add', 'item': item, 'quantity': quantity, 'timestamp': getTimestampInSeconds()})
         } else if (quantity > 0) {
