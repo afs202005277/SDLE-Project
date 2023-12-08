@@ -27,6 +27,9 @@ class DatabaseManagement:
                     from HashingRing import HashingRing
                     hashing_ring = HashingRing(self.get_num_connections())
                     main_db_id = hashing_ring.find_main_database_id(list_id)
+                    if i not in self.__get_db_and_replicas(main_db_id):
+                        self.__delete_list(i, list_id)
+
                     if db_id == main_db_id:
                         self.__insert_list(db_id, list_object)
                         self.merge_list(main_db_id, list_id)
