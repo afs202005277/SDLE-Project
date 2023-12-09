@@ -174,6 +174,14 @@ async function cloudSync() {
         console.log(activeList.getId())
         console.log(response)
 
+        // The list got deleted
+        if(!response['items']){
+            localStorage.removeItem(`${activeList.getHash()}_id`);
+            lists.delete(activeList.getHash())
+            document.getElementById("sync-overlay").classList.toggle('d-none', true)
+            return
+        }
+
         localStorage.setItem(activeList.getHash() + "_id", response['id'])
         localStorage.setItem(`changelog_${response['list_name']}`, [])
         localStorage.setItem(activeList.getHash(), JSON.stringify(response['items']));
@@ -281,7 +289,16 @@ class ShoppingLists {
     }
 
     delete(item, index) {
+        if(index === undefined){
+            for(let i = 0; i < this.lists.length; i++){
+                if(this.lists[i] === item){
+                    index = i
+                    break
+                }
+            }
+        }
         this.lists.splice(index, 1);
+
         postReq(
             'http://localhost:6969/req/removeList',
             {list_id: localStorage.getItem(`${item}_id`)}
