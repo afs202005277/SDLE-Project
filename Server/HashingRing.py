@@ -1,21 +1,26 @@
-import hashlib
 import random
 
 
 class HashingRing:
 
     def __init__(self, num_databases):
+        """
+            Initializes a HashingRing instance.
+
+            Args:
+                num_databases (int): The number of databases (nodes) in the hashing ring.
+        """
         self.nodes_positions = dict()
         self.num_databases = num_databases
         random.seed(100)  # best seed to balanced loads
         self.divide_hash_ring_into_segments()
 
-    @staticmethod
-    def compute_md5_hash(identifier):
-        id_str = str(identifier)
-        hash_obj = hashlib.md5(id_str.encode())
-        return int(hash_obj.hexdigest(), 16)
+    """
+        Divides the hash ring into segments for each database, assigning random positions to virtual nodes.
 
+        Returns:
+            dict: A dictionary mapping each database identifier to a list of random positions.
+    """
     def divide_hash_ring_into_segments(self):
         for database_id in range(self.num_databases):
             positions = [random.randint(1, 2 ** 128 - 1) for _ in range(3)]  # adding virtual nodes
@@ -24,13 +29,27 @@ class HashingRing:
         return self.nodes_positions
 
     def get_main_nodes_positions(self):
+        """
+            Gets the positions of the main nodes (original, not virtual) for each database.
+
+            Returns:
+                list: A list of tuples containing the database identifier and the position of its main node.
+        """
         res = []
         for db_id, positions_list in self.nodes_positions.items():
             res.append((db_id, positions_list[0]))
         return sorted(res, key=lambda x: x[1])
 
-
     def find_main_database_id(self, request_id_hash):
+        """
+            Finds the main database identifier responsible for a given hashed request identifier.
+
+            Args:
+                request_id_hash: The hashed request identifier.
+
+            Returns:
+                int: The identifier of the main database responsible for the given hash.
+        """
         smallest_greater = None
         database_identifier = None
         request_id_hash = int(request_id_hash, 16)
@@ -50,21 +69,3 @@ class HashingRing:
                     smallest_value = tmp_smallest
                     database_identifier = identifier
         return database_identifier
-
-
-if __name__ == '__main__':
-    from DatabaseManagement import DatabaseManagement
-
-    database_management = DatabaseManagement()
-    hashing_ring = HashingRing(database_management.get_num_connections())
-    list_name = "a"
-    while True:
-        print(list_name)
-        if 8 == hashing_ring.find_main_database_id(DatabaseManagement.get_id(list_name, "teste@gmail.com")):
-            print("FOUND!")
-            break
-        if list_name == 'z':
-            break
-        list_name = chr((ord(list_name) % 32) + 1 + ord('a') - 1) if list_name.islower() else chr(
-            (ord(list_name) % 32) + 1 + ord('A') - 1)
-
