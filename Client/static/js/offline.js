@@ -236,7 +236,7 @@ async function areyouthere(){
  * @function
  */
 async function cloudSync() {
-    if(disconnectFromCloud) areyouthere()
+    await areyouthere()
     if(disconnectFromCloud) return
 
     let lists_to_delete = JSON.parse(localStorage.getItem('lists_to_delete'))
