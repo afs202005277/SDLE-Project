@@ -8,6 +8,19 @@ Note: It's needed to install the BerkeleyDB.
 
 https://docs.oracle.com/cd/E17076_05/html/installation/build_unix.html
 
+Required packages:
+- [sqlite3](https://docs.python.org/3/library/sqlite3.html)
+- [jose](https://pypi.org/project/python-jose/)
+- [passlib](https://pypi.org/project/passlib/)
+- [typing](https://docs.python.org/3/library/typing.html)
+- [zmq](https://zeromq.org/languages/python/)
+- [hashlib](https://docs.python.org/3/library/hashlib.html)
+- [json](https://docs.python.org/3/library/json.html)
+- [berkeleydb](https://docs.jcea.es/berkeleydb/latest/)
+- [threading](https://docs.python.org/3/library/threading.html)
+- [prettytable](https://pypi.org/project/prettytable/)
+- [jwt](https://pyjwt.readthedocs.io/en/stable/)
+
 In 4 different terminal instances run the following services:
 
 - Flask webserver
