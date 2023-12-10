@@ -148,10 +148,10 @@ function bit_rol(d, _) {
  **/
 
 async function cloudSync() {
+    if(disconnectFromCloud) return
+
     // We arent inside a list
     if (!activeList.getHash()) return
-
-    document.getElementById("sync-overlay").classList.toggle('d-none', false)
 
     // The list has a ID? (it doesnt has a ID if never got syncronized)
     if (activeList.getId()) {
@@ -166,6 +166,7 @@ async function cloudSync() {
         }
 
         console.log('shopping list not syncronized, requesting the cloud.')
+        document.getElementById("sync-overlay").classList.toggle('d-none', false)
         response = await postReq(
             `http://localhost:6969/req/synchronize/${activeList.getId()}`,
             activeList.changes
@@ -192,6 +193,7 @@ async function cloudSync() {
         lists.render()
     } else {
         console.log('shopping list doesnt exists in the cloud, creating...')
+        document.getElementById("sync-overlay").classList.toggle('d-none', false)
         const response = await postReq(
             `http://localhost:6969/req/synchronize/${activeList.getId()}`,
             {
@@ -216,11 +218,9 @@ function getTimestampInSeconds() {
     return Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds()) / 1000);
 }
 
-/*
 setInterval(() => {
     cloudSync()
-}, 5000);
-*/
+}, 2500);
 
 document.getElementById('helper_clear').addEventListener('click', () => {
     localStorage.clear()
@@ -320,7 +320,7 @@ class ShoppingLists {
         this.lists.forEach((item, index) => {
             const cache = localStorage.getItem(item)
             const list = cache !== '' ? JSON.parse(cache) : []
-            const quantity = list.reduce((acc, val) => acc + val.quantity, 0)
+            const quantity = list.reduce((acc, val) => val.quantity > 0 ? acc + val.quantity : acc, 0)
 
             const li = document.createElement('li');
             li.classList = 'px-3 w-100 d-flex justify-content-between align-items-center'
@@ -455,7 +455,6 @@ class ShoppingList {
         if (this.items.map(i => i.name).includes(item)) {
             this.modify(() => {
                 this.items.filter(i => i.name === item)[0].quantity += quantity;
-                this.items = this.items.filter(i => i.quantity >= 0)
             })
             this.log({'operation': 'add', 'item': item, 'quantity': quantity, 'timestamp': getTimestampInSeconds()})
         } else if (quantity > 0) {
@@ -484,27 +483,16 @@ class ShoppingList {
         )
 
         if (quantity < 1) return
-        else if (quantity < this.items[index].quantity) {
-            this.log({
-                'operation': 'buy',
-                'item': this.items[index].name,
-                'quantity': quantity,
-                'timestamp': getTimestampInSeconds()
-            })
-            this.modify(() => {
-                this.items[index].quantity -= quantity
-            })
-        } else {
-            this.log({
-                'operation': 'buy',
-                'item': this.items[index].name,
-                'quantity': this.items[index].quantity,
-                'timestamp': getTimestampInSeconds()
-            })
-            this.modify(() => {
-                this.items[index].quantity = 0;
-            })
-        }
+    
+        this.log({
+            'operation': 'buy',
+            'item': this.items[index].name,
+            'quantity': quantity,
+            'timestamp': getTimestampInSeconds()
+        })
+        this.modify(() => {
+            this.items[index].quantity -= quantity
+        })
     }
 
     rename(item, newName) {
