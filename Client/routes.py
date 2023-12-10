@@ -92,15 +92,12 @@ def create_list():
     data = {"type": "CreateList", "token": session['token'], "list_name": data.get('list_name'), "items": []}
     socket.send_json(data)
     list_server = socket.recv_json()
-    print(type(list_server))
-    print(list_server)
     return list_server
 
 
 @bp.route('/req/addToList', methods=['POST'])
 def add_to_list():
     data = request.get_json()
-    print(data)
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
@@ -114,7 +111,6 @@ def add_to_list():
 @bp.route('/req/removeList', methods=['POST'])
 def remove_list():
     data = request.get_json()
-    print(data)
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
@@ -190,8 +186,6 @@ def list_id(list_name):
 @bp.route('/req/synchronize/<list_id>', methods=['POST'])
 def synchronize(list_id):
     data = request.get_json()
-    print(data)
-    print(list_id)
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.connect("tcp://localhost:5559")
@@ -215,7 +209,6 @@ def login_post():
     socket = context.socket(zmq.REQ)
     socket.setsockopt(zmq.SNDTIMEO, 1000)  # Setting a send timeout of 1000 milliseconds
     socket.setsockopt(zmq.IMMEDIATE, 1)
-
 
     try:
         socket.connect("tcp://localhost:5575")
