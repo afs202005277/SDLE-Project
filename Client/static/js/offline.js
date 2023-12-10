@@ -289,7 +289,7 @@ async function cloudSync() {
         }
 
         localStorage.setItem(activeList.getName() + "_id", response['id'])
-        localStorage.setItem(`changelog_${response['list_name']}`, [])
+        localStorage.setItem(`changelog_${activeList.name}`, [])
         localStorage.setItem(activeList.getName(), JSON.stringify(response['items']));
 
         document.getElementById('id').textContent = response['id']
@@ -358,7 +358,7 @@ function getTimestampInSeconds() {
  */
 setInterval(() => {
     cloudSync()
-}, 5000);
+}, 4000);
 
 /**
  * Helper function that clear local storage
@@ -556,7 +556,7 @@ addListForm.addEventListener('submit', async e => {
     e.preventDefault();
 
     const input = document.getElementById('list');
-    const newList = input.value.replace(/[^a-zA-Z ]/g, '').trim();
+    const newList = input.value.replace(/[^a-zA-Z0-9 ]/g, '').trim();
 
     if (newList !== '') {
         // Do not await for this request, it can block by the ZMQ
