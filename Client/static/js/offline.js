@@ -1,6 +1,25 @@
+/**
+ * @fileOverview Offline managment of the application
+ * @description This script manages a simple shopping list application with features like creating, renaming, deleting, and syncing lists. It uses local storage for data persistence and allows sharing lists via generated links.
+ * @version 1.0.0
+ * @license MIT License
+ */
+
+/**
+ * Represents the currently active shopping list.
+ * @type {ShoppingList}
+ */
 let activeList = null;
+
+/**
+ * Flag indicating whether the application is disconnected from the cloud.
+ * @type {boolean}
+ */
 let disconnectFromCloud = false;
 
+/**
+ * Adds a overlay when content is loading
+ */
 window.addEventListener("DOMContentLoaded", function () {
     const loader = document.querySelector(".loader");
     const overlay = this.document.querySelector(".overlay");
@@ -18,6 +37,10 @@ window.addEventListener("DOMContentLoaded", function () {
     });
 },);
 
+/**
+ * Manages the side menu functionality.
+ * @function
+ */
 document.querySelector('#sideMenuButton').addEventListener('click', function() {
     const menu = document.querySelector('#sideMenu')
 
@@ -32,6 +55,10 @@ document.querySelector('#sideMenuButton').addEventListener('click', function() {
     }
 })
 
+/**
+ * Adds mouseover and mouseleave event listeners to icons for visual effects.
+ * @function
+ */
 function loadIcons() {
     const icons = document.querySelectorAll('i')
 
@@ -51,9 +78,15 @@ function loadIcons() {
         })
     }
 }
-
 loadIcons()
 
+/**
+ * Wrapper that creates a shopping list item with a name and quantity.
+ * @function
+ * @param {string} name - The name of the item.
+ * @param {number} quantity - The quantity of the item.
+ * @returns {Object} - The created item object.
+ */
 function createItem(name, quantity) {
     return {
         'name': name,
@@ -61,6 +94,14 @@ function createItem(name, quantity) {
     }
 }
 
+/**
+ * Sends a POST request to the specified URL with JSON data.
+ * @async
+ * @function
+ * @param {string} url - The URL for the POST request.
+ * @param {Object} data - The data to be sent in the request body.
+ * @returns {Promise<Object>} - A Promise that resolves to the JSON response.
+ */
 async function postReq(url, data) {
     if (disconnectFromCloud) throw "Disconnected from cloud";
 
@@ -79,10 +120,11 @@ async function postReq(url, data) {
 }
 
 /**
- *
- *
- **/
-
+ * MD5 hash function for generating hash values.
+ * @function
+ * @param {string} d - The input string to be hashed.
+ * @returns {string} - The MD5 hash value.
+ */
 var MD5 = function (d) {
     var r = M(V(Y(X(d), 8 * d.length)));
     return r.toLowerCase()
@@ -143,21 +185,21 @@ function bit_rol(d, _) {
 }
 
 /**
- *
- *
- **/
-
+ * Synchronizes the active shopping list with the cloud.
+ * @async
+ * @function
+ */
 async function cloudSync() {
     if(disconnectFromCloud) return
 
     // We arent inside a list
-    if (!activeList.getHash()) return
+    if (!activeList.getName()) return
 
     // The list has a ID? (it doesnt has a ID if never got syncronized)
     if (activeList.getId()) {
         let response = await fetch(`http://localhost:6969/req/cloudHash/${activeList.getId()}`)
         let cloudHash = await response.text()
-        let localHash = MD5(`{list_name:${activeList.hash},items:${JSON.stringify(activeList.items).replaceAll('\"', '')}}`)
+        let localHash = MD5(`{list_name:${activeList.name.replaceAll(' ', '').replace(/\([^)]*\)/g, '').trim()},items:${JSON.stringify(activeList.items).replaceAll('\"', '')}}`)
 
         if (cloudHash == localHash) {
             console.log('shopping list is syncronized.')
@@ -172,24 +214,21 @@ async function cloudSync() {
             activeList.changes
         )
 
-        console.log(activeList.getId())
-        console.log(response)
-
         // The list got deleted
         if(!response['items']){
-            localStorage.removeItem(`${activeList.getHash()}_id`);
-            lists.delete(activeList.getHash())
+            localStorage.removeItem(`${activeList.getName()}_id`);
+            lists.delete(activeList.getName())
             document.getElementById("sync-overlay").classList.toggle('d-none', true)
             return
         }
 
-        localStorage.setItem(activeList.getHash() + "_id", response['id'])
+        localStorage.setItem(activeList.getName() + "_id", response['id'])
         localStorage.setItem(`changelog_${response['list_name']}`, [])
-        localStorage.setItem(activeList.getHash(), JSON.stringify(response['items']));
+        localStorage.setItem(activeList.getName(), JSON.stringify(response['items']));
 
         document.getElementById('id').textContent = response['id']
 
-        activeList = new ShoppingList(activeList.getHash())
+        activeList = new ShoppingList(activeList.getName())
         lists.render()
     } else {
         console.log('shopping list doesnt exists in the cloud, creating...')
@@ -197,14 +236,14 @@ async function cloudSync() {
         const response = await postReq(
             `http://localhost:6969/req/synchronize/${activeList.getId()}`,
             {
-                'name': activeList.getHash(),
+                'name': activeList.getName(),
                 'changes': activeList.changes
             }
         )
 
-        console.log(response);
         localStorage.setItem(response['list_name'] + "_id", response['id'])
         localStorage.setItem(`changelog_${response['list_name']}`, [])
+        activeList = new ShoppingList(activeList.getName())
 
         document.getElementById('id').textContent = response['id']
     }
@@ -212,23 +251,43 @@ async function cloudSync() {
     document.getElementById("sync-overlay").classList.toggle('d-none', true)
 }
 
+/**
+ * Gets the current timestamp in seconds.
+ * @function
+ * @returns {number} - The timestamp in seconds.
+ */
 function getTimestampInSeconds() {
-    // return Math.floor(Date.now() / 1000)
     const date = new Date();
     return Math.floor(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), date.getSeconds()) / 1000);
 }
 
+/**
+ * Interval function for continuous cloud synchronization
+ * @function
+ */
 setInterval(() => {
     cloudSync()
 }, 2500);
 
+/**
+ * Helper function that clear local storage
+ * @function
+ */
 document.getElementById('helper_clear').addEventListener('click', () => {
     localStorage.clear()
     location.reload()
 })
 
+/**
+ * Helper manual sync
+ * @function
+ */
 document.getElementById('helper_sync').addEventListener('click', cloudSync)
 
+/**
+ * Helper that disconnects from the cloud
+ * @function
+ */
 document.getElementById('helper_disc').addEventListener('click', () => {
     if (disconnectFromCloud)
         document.getElementById('helper_disc').textContent = 'Disconnect from cloud'
@@ -240,60 +299,83 @@ document.getElementById('helper_disc').addEventListener('click', () => {
 })
 
 /**
- *
- * CLASS SHOPPING LISTS
- *
- **/
-
+ * Represents a collection of shopping lists.
+ * @class
+ */
 class ShoppingLists {
+    /**
+     * Initializes the class by loading existing shopping lists and rendering them.
+     */
     constructor() {
         this.lists = this.load();
         this.render();
     }
 
+    /**
+     * Retrieves shopping lists from local storage or initializes an empty array if none exists.
+     * @returns {Array} - The array of shopping lists.
+     */
     load() {
         const list = localStorage.getItem('shoppingLists');
         return list ? JSON.parse(list) : [];
     }
 
+    /**
+     * Adds a shared list to the collection and performs necessary local storage and synchronization actions.
+     * @param {Object} list - The shared list object received from the cloud.
+     */
     addSharedList(list) {
-        const name = list['list_name'];
-        const existingList = localStorage.getItem(name)
-        if (existingList) return
+        const name = list['list_name'] + ` (${list['email']})`;
+        const existingList = localStorage.getItem(name);
 
-        this.lists.push(name)
+        if (existingList) return;
+
+        this.lists.push(name);
         localStorage.setItem(name, JSON.stringify(list['items']));
-        localStorage.setItem(name + "_id", list['id'])
-        localStorage.setItem(`changelog_${name}`, [])
+        localStorage.setItem(name + "_id", list['id']);
+        localStorage.setItem(`changelog_${name}`, []);
 
-        activeList = new ShoppingList(name)
-        this.save()
-        cloudSync()
+        activeList = new ShoppingList(name);
+        this.save();
+        cloudSync();
     }
 
+    /**
+     * Persists the current state of the shopping lists to local storage and triggers a render.
+     */
     save() {
         localStorage.setItem('shoppingLists', JSON.stringify(this.lists));
-        this.render()
+        this.render();
     }
 
+    /**
+     * Creates a new shopping list with the given name and optional list ID.
+     * @param {string} name - The name of the new shopping list.
+     * @param {string} list_id - This value should come from the cloud
+     */
     create(name, list_id) {
-        const existingList = localStorage.getItem(name)
-        if (existingList) return
+        const existingList = localStorage.getItem(name);
+        if (existingList) return;
 
-        this.lists.push(name)
-        localStorage.setItem(name, [])
-        if (list_id) localStorage.setItem(name + "_id", list_id)
+        this.lists.push(name);
+        localStorage.setItem(name, []);
+        if (list_id) localStorage.setItem(name + "_id", list_id);
 
-        activeList = new ShoppingList(name)
-        this.save()
+        activeList = new ShoppingList(name);
+        this.save();
     }
 
+    /**
+     * Deletes a shopping list from the collection and performs necessary local storage and synchronization actions.
+     * @param {string} item - The name of the shopping list to be deleted.
+     * @param {number} index - The optional index of the shopping list in the collection.
+     */
     delete(item, index) {
-        if(index === undefined){
-            for(let i = 0; i < this.lists.length; i++){
-                if(this.lists[i] === item){
-                    index = i
-                    break
+        if (index === undefined) {
+            for (let i = 0; i < this.lists.length; i++) {
+                if (this.lists[i] === item) {
+                    index = i;
+                    break;
                 }
             }
         }
@@ -301,65 +383,78 @@ class ShoppingLists {
 
         postReq(
             'http://localhost:6969/req/removeList',
-            {list_id: localStorage.getItem(`${item}_id`)}
-        )
-        localStorage.removeItem(item)
+            { list_id: localStorage.getItem(`${item}_id`) }
+        );
+
+        localStorage.removeItem(item);
         localStorage.removeItem(`changelog_${item}`);
         localStorage.removeItem(`${item}_id`);
 
-        if (activeList.getHash() === item)
-            activeList = new ShoppingList(this.getFirst())
+        if (activeList.getName() === item)
+            activeList = new ShoppingList(this.getFirst());
 
-        this.save()
+        this.save();
     }
 
+    /**
+     * Renders the shopping lists in the user interface
+     */
     render() {
         const ul = document.getElementById('others');
         ul.innerHTML = '';
 
         this.lists.forEach((item, index) => {
-            const cache = localStorage.getItem(item)
-            const list = cache !== '' ? JSON.parse(cache) : []
-            const quantity = list.reduce((acc, val) => val.quantity > 0 ? acc + val.quantity : acc, 0)
+            const cache = localStorage.getItem(item);
+            const list = cache !== '' ? JSON.parse(cache) : [];
+            const quantity = list.reduce((acc, val) => val.quantity > 0 ? acc + val.quantity : acc, 0);
 
             const li = document.createElement('li');
-            li.classList = 'px-3 w-100 d-flex justify-content-between align-items-center'
+            li.classList = 'px-3 w-100 d-flex justify-content-between align-items-center';
             li.innerHTML = `
                 <span>${item}</span>
                 <div class="d-flex gap-2 align-items-center">
                     <span class="badge bg-primary rounded-pill">${quantity}</span>
                     <i class="fa-solid fa-delete-left whiteIcon"></i>
                 </div>
-            `
+            `;
+
             li.querySelector('span').addEventListener('click', () => {
-                activeList = new ShoppingList(item)
+                activeList = new ShoppingList(item);
             });
 
             li.querySelector('i').addEventListener('click', e => {
-                e.preventDefault()
+                e.preventDefault();
                 this.delete(item, index);
             });
 
             ul.appendChild(li);
         });
-        loadIcons()
+        loadIcons();
     }
 
+    /**
+     * Retrieves the name of the first shopping list in the collection, if any.
+     * @returns {string|null} - The name of the first shopping list or null if the collection is empty.
+     */
     getFirst() {
-        return this.lists == []
-            ? null
-            : this.lists[0]
+        return this.lists.length === 0 ? null : this.lists[0];
     }
 }
 
+/**
+ * Instance that manages all lists
+ */
 const lists = new ShoppingLists()
 
+/**
+ * Event listener for the creating of a new list
+ */
 const addListForm = document.getElementById('addListForm');
 addListForm.addEventListener('submit', async e => {
     e.preventDefault();
 
     const input = document.getElementById('list');
-    const newList = input.value.trim();
+    const newList = input.value.replace(/[^a-zA-Z ]/g, '').trim();
 
     if (newList !== '') {
         // Do not await for this request, it can block by the ZMQ
@@ -374,7 +469,7 @@ addListForm.addEventListener('submit', async e => {
                     lists.addSharedList(json['data'])
                 } else if (json['status'] === 'created') {
                     localStorage.setItem(newList + "_id", json['data']['list_id'])
-                    activeList = new ShoppingList(activeList.getHash())
+                    activeList = new ShoppingList(activeList.getName())
                 } else {
                     console.log("Unknown status!")
                 }
@@ -390,167 +485,218 @@ addListForm.addEventListener('submit', async e => {
 });
 
 /**
- *
- * CLASS SHOPPING LIST
- *
- **/
-
+ * Represents an individual shopping list.
+ * @class
+ */
 class ShoppingList {
-    constructor(hash) {
-        if (hash == null) {
-            document.querySelector('h3').innerHTML = `You don't have any lists, please create one.`
-            document.getElementById('shoppingList').innerHTML = ''
-            document.getElementById('id').innerHTML = ''
-            if (document.querySelector('#sharing-link-id')) document.querySelector('#sharing-link-id').remove()
-            document.querySelector('#formsWrapper').style.display = "none"
+    /**
+     * Initializes the shopping list based on the provided name.
+     * If the name is null, displays a message indicating the absence of lists.
+     * @param {string} name - Shopping list name
+     */
+    constructor(name) {
+        if (name == null) {
+            document.querySelector('h3').innerHTML = `You don't have any lists, please create one.`;
+            document.getElementById('shoppingList').innerHTML = '';
+            document.getElementById('id').innerHTML = '';
+            if (document.querySelector('#sharing-link-id')) document.querySelector('#sharing-link-id').remove();
+            document.querySelector('#formsWrapper').style.display = "none";
         } else {
-            this.hash = hash
-            this.list_id = localStorage.getItem(hash + "_id")
+            this.name = name;
+            this.list_id = localStorage.getItem(name + "_id");
             this.items = this.load();
             this.changes = this.changelog();
-            document.querySelector('#formsWrapper').style.display = "flex"
+            document.querySelector('#formsWrapper').style.display = "flex";
             this.render();
         }
     }
 
+    /**
+     * Clears the changelog for the shopping list.
+     */
     clearChangelog() {
         this.changes = [];
     }
 
+    /**
+     * Retrieves the ID associated with the shopping list.
+     * @returns {string|null} - The ID of the shopping list.
+     */
     getId() {
         return this.list_id;
     }
 
-    getHash() {
-        return this.hash
+    /**
+     * Retrieves the name of the shopping list.
+     * @returns {string} - The hash of the shopping list.
+     */
+    getName() {
+        return this.name;
     }
 
+    /**
+     * Loads the items of the shopping list from local storage.
+     * @returns {Array} - The array of items in the shopping list.
+     */
     load() {
-        const list = localStorage.getItem(this.hash);
+        const list = localStorage.getItem(this.name);
         return list ? JSON.parse(list) : [];
     }
 
+    /**
+     * Retrieves the changelog of the shopping list from local storage.
+     * @returns {Array} - The array representing the changelog of the shopping list.
+     */
     changelog() {
-        const cl = localStorage.getItem(`changelog_${this.hash}`)
+        const cl = localStorage.getItem(`changelog_${this.name}`);
         return cl ? JSON.parse(cl) : [];
     }
 
+    /**
+     * Logs an operation in the changelog of the shopping list.
+     * @param {Object} info - The information about the operation to be logged.
+     */
     log(info) {
-        this.changes.push(info)
-        localStorage.setItem(`changelog_${this.hash}`, JSON.stringify(this.changes));
+        this.changes.push(info);
+        localStorage.setItem(`changelog_${this.name}`, JSON.stringify(this.changes));
     }
 
+    /**
+     * Persists the current state of the shopping list to local storage and triggers a render of the lists.
+     */
     save() {
-        localStorage.setItem(this.hash, JSON.stringify(this.items));
-        lists.render()
+        localStorage.setItem(this.name, JSON.stringify(this.items));
+        lists.render();
     }
 
+    /**
+     * Modifies the shopping list based on the provided function, saves the changes, and triggers a render.
+     * @param {Function} func - The function that modifies the shopping list.
+     */
     modify(func) {
-        func()
+        func();
         this.save();
         this.render();
     }
 
+    /**
+     * Adds an item to the shopping list, updating quantity if the item already exists.
+     * @param {string} item - The name of the item to be added.
+     * @param {number} quantity - The quantity of the item to be added.
+     */
     add(item, quantity) {
         if (this.items.map(i => i.name).includes(item)) {
             this.modify(() => {
                 this.items.filter(i => i.name === item)[0].quantity += quantity;
-            })
-            this.log({'operation': 'add', 'item': item, 'quantity': quantity, 'timestamp': getTimestampInSeconds()})
+            });
+            this.log({'operation': 'add', 'item': item, 'quantity': quantity, 'timestamp': getTimestampInSeconds()});
         } else if (quantity > 0) {
             this.modify(() => {
                 this.items.push(createItem(item, quantity));
-            })
-            this.log({'operation': 'add', 'item': item, 'quantity': quantity, 'timestamp': getTimestampInSeconds()})
+            });
+            this.log({'operation': 'add', 'item': item, 'quantity': quantity, 'timestamp': getTimestampInSeconds()});
         }
     }
 
+    /**
+     * Deletes an item from the shopping list, updating quantity and performing necessary synchronization.
+     * @param {number} index - The index of the item to be deleted.
+     * @param {number} quantity - The quantity of the item to be deleted.
+     */
     delete(index, quantity) {
-        const list_name = activeList.getHash()
+        const list_name = activeList.getName();
         postReq(
             'http://localhost:6969/req/buyItem',
             {list_id: activeList.getId(), name: this.items[index].name, quantity: quantity}
         ).then(
             r => {
-                if (!r) return
+                if (!r) return;
 
                 localStorage.setItem(`changelog_${list_name}`, []);
-                if (activeList.getHash() === list_name)
-                    activeList.clearChangelog()
+                if (activeList.getName() === list_name)
+                    activeList.clearChangelog();
             },
             () => {
             }
-        )
+        );
 
-        if (quantity < 1) return
-    
+        if (quantity < 1) return;
+
         this.log({
             'operation': 'buy',
             'item': this.items[index].name,
             'quantity': quantity,
             'timestamp': getTimestampInSeconds()
-        })
+        });
         this.modify(() => {
-            this.items[index].quantity -= quantity
-        })
+            this.items[index].quantity -= quantity;
+        });
     }
 
+    /**
+     * Renames an item in the shopping list, performing necessary synchronization if needed.
+     * @param {Object} item - The item object to be renamed.
+     * @param {string} newName - The new name for the item.
+     */
     rename(item, newName) {
-        if (newName === '' || item.name === newName) return
+        if (newName === '' || item.name === newName) return;
 
-        const list_name = activeList.getHash()
+        const list_name = activeList.getName();
         postReq(
             'http://localhost:6969/req/renameItem',
             {list_id: activeList.getId(), item_name: item.name, new_item_name: newName}
         ).then(
             r => {
-                if (!r) return
+                if (!r) return;
 
                 localStorage.setItem(`changelog_${list_name}`, []);
-                if (activeList.getHash() === list_name)
-                    activeList.clearChangelog()
+                if (activeList.getName() === list_name)
+                    activeList.clearChangelog();
             },
             () => {
             }
-        )
+        );
 
         if (this.items.map(i => i.name).includes(newName)) {
             this.modify(() => {
                 this.items.filter(i => i.name === newName)[0].quantity += item.quantity;
-                this.items = this.items.filter(i => i.name !== item.name)
-            })
-            this.log({'operation': 'remove', 'item': item.name, 'timestamp': getTimestampInSeconds()})
+                this.items = this.items.filter(i => i.name !== item.name);
+            });
+            this.log({'operation': 'remove', 'item': item.name, 'timestamp': getTimestampInSeconds()});
             this.log({
                 'operation': 'add',
                 'item': newName,
                 'quantity': item.quantity,
                 'timestamp': getTimestampInSeconds()
-            })
+            });
         } else {
             this.log({
                 'operation': 'rename',
                 'item': item.name,
                 'newItem': newName,
                 'timestamp': getTimestampInSeconds()
-            })
+            });
             this.modify(() => {
                 item.name = newName;
-            })
+            });
         }
     }
 
+    /**
+     * Renders the shopping list in the user interface
+     */
     render() {
         const shoppingList = document.getElementById('shoppingList');
         shoppingList.innerHTML = '';
 
-        document.querySelector('h3').innerHTML = `List: ${this.hash}`
+        document.querySelector('h3').innerHTML = `List: ${this.name}`;
 
-        const deleteModal = document.getElementById('deleteModal')
-        const renameModal = document.getElementById('renameModal')
+        const deleteModal = document.getElementById('deleteModal');
+        const renameModal = document.getElementById('renameModal');
 
         this.items.forEach((item, index) => {
             const li = document.createElement('li');
-            li.classList = 'px-3 w-100 d-flex justify-content-between align-items-center'
+            li.classList = 'px-3 w-100 d-flex justify-content-between align-items-center';
             li.style.height = "40px";
             if (item.quantity == 0) {
                 li.innerHTML = `
@@ -558,7 +704,7 @@ class ShoppingList {
                 <div class="d-flex gap-2 align-items-center">
                     <span class="badge bg-primary rounded-pill">${item.quantity}</span>
                 </div>
-            `
+            `;
             }
             else {
                 li.innerHTML = `
@@ -568,37 +714,40 @@ class ShoppingList {
                     <button type="button" class="btn delete" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="fa-solid fa-cart-shopping blackIcon"></i></button>
                     <button type="button" class="btn rename" data-bs-toggle="modal" data-bs-target="#renameModal"><i class="fa-solid fa-font blackIcon"></i></button>
                 </div>
-            `
-            li.querySelector('button.delete').addEventListener('click', () => {
-                document.querySelector('#deleteModal #quantity').value = item.quantity
-                let action = deleteModal.querySelector('.modal-action')
-                action.outerHTML = action.outerHTML; // reset listeners
-                action = deleteModal.querySelector('.modal-action')
-                action.addEventListener('click', () => {
-                    this.delete(index, document.querySelector('#deleteModal #quantity').value)
-                })
-            })
+            `;
+                li.querySelector('button.delete').addEventListener('click', () => {
+                    document.querySelector('#deleteModal #quantity').value = item.quantity;
+                    let action = deleteModal.querySelector('.modal-action');
+                    action.outerHTML = action.outerHTML; // reset listeners
+                    action = deleteModal.querySelector('.modal-action');
+                    action.addEventListener('click', () => {
+                        this.delete(index, document.querySelector('#deleteModal #quantity').value);
+                    });
+                });
 
-            li.querySelector('button.rename').addEventListener('click', () => {
-                document.getElementById('renameModalLabel').textContent = `Rename item: "${item.name}"`
+                li.querySelector('button.rename').addEventListener('click', () => {
+                    document.getElementById('renameModalLabel').textContent = `Rename item: "${item.name}"`;
 
-                let action = renameModal.querySelector('.modal-action')
-                action.outerHTML = action.outerHTML; // reset listeners
-                action = renameModal.querySelector('.modal-action')
-                action.addEventListener('click', () => {
-                    this.rename(item, document.getElementById('newName').value)
-                })
-            })
+                    let action = renameModal.querySelector('.modal-action');
+                    action.outerHTML = action.outerHTML; // reset listeners
+                    action = renameModal.querySelector('.modal-action');
+                    action.addEventListener('click', () => {
+                        this.rename(item, document.getElementById('newName').value);
+                    });
+                });
             }
 
             shoppingList.appendChild(li);
         });
-        loadIcons()
-        document.querySelector('#id').textContent = localStorage.getItem(this.hash + "_id");
-        if (document.querySelector('#sharing-link-id')) document.querySelector('#sharing-link-id').remove()
+        loadIcons();
+        document.querySelector('#id').textContent = localStorage.getItem(this.name + "_id");
+        if (document.querySelector('#sharing-link-id')) document.querySelector('#sharing-link-id').remove();
     }
 }
 
+/**
+ * Event listener for the creation of a new item
+ */
 const addItemForm = document.getElementById('addItemForm');
 addItemForm.addEventListener('submit', e => {
     e.preventDefault();
@@ -612,12 +761,12 @@ addItemForm.addEventListener('submit', e => {
     else quantity = parseInt(quantity)
 
     if (newItem !== '') {
-        console.log(activeList.getHash())
+        console.log(activeList.getName())
 
         activeList.add(newItem, quantity);
         itemInput.value = '';
 
-        const list_name = activeList.getHash()
+        const list_name = activeList.getName()
         postReq(
             'http://localhost:6969/req/addToList',
             {list_id: activeList.getId(), item_name: newItem, quantity: quantity}
@@ -626,7 +775,7 @@ addItemForm.addEventListener('submit', e => {
                 if (!r) return
 
                 localStorage.setItem(`changelog_${list_name}`, []);
-                if (activeList.getHash() === list_name)
+                if (activeList.getName() === list_name)
                     activeList.clearChangelog()
             },
             () => {
@@ -635,6 +784,9 @@ addItemForm.addEventListener('submit', e => {
     }
 });
 
+/**
+ * Event listener for the "click" event on the sharing button.
+ */
 document.querySelector('#sharingButton').addEventListener('click', function() {
     if (!document.querySelector('#sharing-link-id')) {
         const link = document.createElement('span')
@@ -644,8 +796,9 @@ document.querySelector('#sharingButton').addEventListener('click', function() {
     }
 })
 
-
-
+/**
+ * Handles sharing lists by url
+ */
 if (window.location.href.includes('sharedList')) {
     const newList = window.location.href.split('=')[1]
     postReq(
@@ -657,16 +810,15 @@ if (window.location.href.includes('sharedList')) {
                 lists.addSharedList(json['data'])
             } else if (json['status'] === 'created') {
                 localStorage.setItem(newList + "_id", json['data']['list_id'])
-                activeList = new ShoppingList(activeList.getHash())
+                activeList = new ShoppingList(activeList.getName())
             } else {
                 console.log("Unknown status!")
             }
         }
     )
 }
+
 /**
- *
- *
- *
- **/
+ * Initializes a list
+ */
 activeList = new ShoppingList(lists.getFirst())
