@@ -215,7 +215,13 @@ function bit_rol(d, _) {
 }
 
 async function areyouthere(){
-    await timeout(2000, fetch(`http://localhost:6969/req/areyouthere`)).catch(
+    await timeout(2000, fetch(`http://localhost:6969/req/areyouthere`)).then(
+        _ => {
+            disconnectFromCloud = false
+            document.getElementById('disconnect-icon').classList.toggle('d-none', true)
+            document.getElementById('helper_disc').textContent = 'Disconnect from cloud'
+        }
+    ).catch(
         _ => {
             disconnectFromCloud = true
             document.getElementById('disconnect-icon').classList.toggle('d-none', false)
