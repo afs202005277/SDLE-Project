@@ -183,6 +183,18 @@ def list_id(list_name):
     return res
 
 
+@bp.route('/req/areyouthere')
+def areyouthere():
+    context = zmq.Context()
+    socket = context.socket(zmq.REQ)
+    socket.connect("tcp://localhost:5559")
+    data = {"type": "AreYouThere", "token": session['token']}
+    socket.send_json(data)
+    sleep(1)
+    res = socket.recv_json()
+    return res
+
+
 @bp.route('/req/synchronize/<list_id>', methods=['POST'])
 def synchronize(list_id):
     data = request.get_json()

@@ -47,7 +47,8 @@ class Server:
             'RenameItem': self.rename_item,
             'GetListHash': self.get_list_hash,
             'Synchronize': self.synchronize,
-            'GetListID': self.get_list_id
+            'GetListID': self.get_list_id,
+            'AreYouThere': self.are_you_there
         }
         self.db_forbidden_parameters = ['token', 'type']
 
@@ -84,6 +85,9 @@ class Server:
             # Remove attributes from list items (recursively)
             json_obj = [self.remove_attributes(item) for item in json_obj]
         return json_obj
+
+    def are_you_there(self, _):
+        return self.__success()
 
     def get_list_id(self, request):
         """

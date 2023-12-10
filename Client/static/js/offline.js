@@ -214,12 +214,23 @@ function bit_rol(d, _) {
     return d << _ | d >>> 32 - _
 }
 
+async function areyouthere(){
+    await timeout(2000, fetch(`http://localhost:6969/req/areyouthere`)).catch(
+        _ => {
+            disconnectFromCloud = true
+            document.getElementById('disconnect-icon').classList.toggle('d-none', false)
+            document.getElementById('helper_disc').textContent = 'Connect to cloud'
+        }
+    )
+}
+
 /**
  * Synchronizes the active shopping list with the cloud.
  * @async
  * @function
  */
 async function cloudSync() {
+    if(disconnectFromCloud) areyouthere()
     if(disconnectFromCloud) return
 
     let lists_to_delete = JSON.parse(localStorage.getItem('lists_to_delete'))
@@ -905,3 +916,4 @@ if (window.location.href.includes('sharedList')) {
  * Initializes a list
  */
 activeList = new ShoppingList(lists.getFirst())
+areyouthere()
