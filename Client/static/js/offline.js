@@ -331,13 +331,15 @@ function cacheListToDelete(name){
 
 function onListDeleted(name){
     const lists = JSON.parse(localStorage.getItem('lists_to_delete'))
+    let index = -1
     for (let i = 0; i < lists.length; i++) {
         if (lists[i] == name) {
             index = i;
             break;
         }
     }
-    localStorage.setItem('lists_to_delete', JSON.stringify(lists.splice(index, 1)))
+    lists.splice(index, 1)
+    localStorage.setItem('lists_to_delete', JSON.stringify(lists))
 }
 
 /**
