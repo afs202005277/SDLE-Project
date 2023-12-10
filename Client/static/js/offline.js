@@ -566,7 +566,6 @@ addListForm.addEventListener('submit', async e => {
             {list_name: newList}
         ).then(
             json => {
-                console.log(json)
                 if (json["status"] === 'existing') {
                     lists.addSharedList(json['data'])
                 } else if (json['status'] === 'created') {
@@ -863,8 +862,6 @@ addItemForm.addEventListener('submit', e => {
     else quantity = parseInt(quantity)
 
     if (newItem !== '') {
-        console.log(activeList.getName())
-
         activeList.add(newItem, quantity);
         itemInput.value = '';
 
