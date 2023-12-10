@@ -95,6 +95,32 @@ function createItem(name, quantity) {
 }
 
 /**
+ * Adds a timeout to a Promise, rejecting it with an error if it takes too long to resolve or reject.
+ *
+ * @param {number} ms - The maximum time allowed for the Promise to resolve or reject, in milliseconds.
+ * @param {Promise} promise - The Promise to be wrapped with a timeout.
+ * @returns {Promise} - Promise to evaluate that either resolves with the original value of the provided Promise
+ *                     or rejects with an error indicating a timeout.
+ * @throws {Error} - If the provided promise takes longer than the specified timeout duration.
+ */
+function timeout(ms, promise) {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            reject(new Error('Request timeout'))
+        }, ms)
+
+        promise.then(value => {
+            clearTimeout(timer)
+            resolve(value)
+        })
+        .catch(reason => {
+            clearTimeout(timer)
+            reject(reason)
+        })
+    })
+}
+
+/**
  * Sends a POST request to the specified URL with JSON data.
  * @async
  * @function
@@ -106,16 +132,20 @@ async function postReq(url, data) {
     if (disconnectFromCloud) throw "Disconnected from cloud";
 
     try {
-        const response = await fetch(url, {
+        const response = await timeout(3500, fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(data),
-        });
+        }));
         return await response.json();
     } catch (error) {
         console.error('Error during POST request:', error);
+        disconnectFromCloud = true 
+        document.getElementById('disconnect-icon').classList.toggle('d-none', false)
+        document.getElementById('helper_disc').textContent = 'Connect to cloud'
+        return ''
     }
 }
 
@@ -192,6 +222,20 @@ function bit_rol(d, _) {
 async function cloudSync() {
     if(disconnectFromCloud) return
 
+    let lists_to_delete = JSON.parse(localStorage.getItem('lists_to_delete'))
+    if(lists_to_delete){
+        for(let l of lists_to_delete){
+            postReq(
+                'http://localhost:6969/req/removeList',
+                { list_id: l }
+            ).then(
+                response => { 
+                    if(response != '') onListDeleted(l) 
+                }
+            )
+        }
+    }
+
     // We arent inside a list
     if (!activeList.getName()) return
 
@@ -213,6 +257,11 @@ async function cloudSync() {
             `http://localhost:6969/req/synchronize/${activeList.getId()}`,
             activeList.changes
         )
+
+        if(response === ''){
+            document.getElementById("sync-overlay").classList.toggle('d-none', true)   
+            return
+        }
 
         // The list got deleted
         if(!response['items']){
@@ -241,6 +290,11 @@ async function cloudSync() {
             }
         )
 
+        if(response === ''){
+            document.getElementById("sync-overlay").classList.toggle('d-none', true)   
+            return
+        }
+
         localStorage.setItem(response['list_name'] + "_id", response['id'])
         localStorage.setItem(`changelog_${response['list_name']}`, [])
         activeList = new ShoppingList(activeList.getName())
@@ -249,6 +303,24 @@ async function cloudSync() {
     }
 
     document.getElementById("sync-overlay").classList.toggle('d-none', true)
+}
+
+function cacheListToDelete(name){
+    let lists = JSON.parse(localStorage.getItem('lists_to_delete'))
+    if(lists == null) lists = []
+    lists.push(name)
+    localStorage.setItem('lists_to_delete', JSON.stringify(lists))
+}
+
+function onListDeleted(name){
+    const lists = JSON.parse(localStorage.getItem('lists_to_delete'))
+    for (let i = 0; i < lists.length; i++) {
+        if (lists[i] == name) {
+            index = i;
+            break;
+        }
+    }
+    localStorage.setItem('lists_to_delete', JSON.stringify(lists.splice(index, 1)))
 }
 
 /**
@@ -267,7 +339,7 @@ function getTimestampInSeconds() {
  */
 setInterval(() => {
     cloudSync()
-}, 2500);
+}, 5000);
 
 /**
  * Helper function that clear local storage
@@ -381,10 +453,21 @@ class ShoppingLists {
         }
         this.lists.splice(index, 1);
 
-        postReq(
-            'http://localhost:6969/req/removeList',
-            { list_id: localStorage.getItem(`${item}_id`) }
-        );
+        // It exists in the cloud?
+        const list_id = localStorage.getItem(`${item}_id`)
+        if(list_id){
+            // In case the cloud doesn't responds
+            cacheListToDelete(list_id)
+    
+            postReq(
+                'http://localhost:6969/req/removeList',
+                { list_id: list_id }
+            ).then(
+                response => { 
+                    if(response != '') onListDeleted(list_id) 
+                }
+            )
+        }
 
         localStorage.removeItem(item);
         localStorage.removeItem(`changelog_${item}`);
