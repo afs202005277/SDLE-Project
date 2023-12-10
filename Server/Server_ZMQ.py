@@ -20,6 +20,17 @@ from HashingRing import HashingRing
 
 
 class Server:
+    """
+    Handles requests from clients and manages shopping lists.
+
+    Attributes:
+    - expiration_date_days (int): Expiration date for tokens in days.
+    - db_management (DatabaseManagement): Instance of DatabaseManagement class.
+    - authentication_management (AuthenticationManagement): Instance of AuthenticationManagement class.
+    - hashing_ring (HashingRing): Instance of HashingRing class for consistent hashing.
+    - request_handlers (dict): Dictionary mapping request types to corresponding handler functions.
+    - db_forbidden_parameters (list): List of forbidden parameters (e.g private information) when interacting with the database.
+    """
 
     def __init__(self):
         self.expiration_date_days = 30
@@ -41,12 +52,23 @@ class Server:
         self.db_forbidden_parameters = ['token', 'type']
 
     def __success(self):
+        """Private method returning a success JSON string."""
         return json.dumps({'status': 'success'})
 
     def __fail(self):
+        """Private method returning a fail JSON string."""
         return json.dumps({'status': 'fail'})
 
     def remove_attributes(self, json_obj):
+        """
+        Recursively removes forbidden attributes (e.g private information) from a JSON-like object.
+
+        Arguments:
+        - json_obj (dict or list): JSON-like object to be sanitized.
+
+        Returns:
+        - dict or list: Sanitized JSON-like object.
+        """
         if isinstance(json_obj, dict):
             # Remove dictionary keys
             for key in list(json_obj.keys()):
@@ -60,21 +82,50 @@ class Server:
         return json_obj
 
     def get_list_id(self, request):
+        """
+        Calculates the ID of a shopping list based on the list name and user email.
+
+        Arguments:
+        - request (dict): Request containing 'list_name' and 'email'.
+
+        Returns:
+        - str: MD5 Hash ID.
+        """
         return DatabaseManagement.get_id(request['list_name'], request['email'])
 
     def get_list_hash(self, request):
+        """
+        Computes and returns the hash of the contents of a shopping list (name + items)
+
+        Arguments:
+        - request (dict): Request containing 'list_id'.
+
+        Returns:
+        - str: MD5 hash of the shopping list.
+        """
+
         list_id = request['list_id']
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
         if not list_object:
             print("List not Found")
-            return ''
+            return self.__fail()
 
         dict_to_hash = {k: v for k, v in list_object.items() if k == 'list_name' or k == 'items'}
         list_str = json.dumps(dict_to_hash).replace(' ', '').replace('\"', '').encode('utf-8')
         return hashlib.md5(list_str).hexdigest()
 
     def synchronize(self, request):
+        """
+        Synchronizes a shopping list with offline changes and returns the updated list.
+
+        Arguments:
+        - request (dict): Request containing 'list_id' and 'changelog'.
+
+        Returns:
+        - str: JSON string representing the updated shopping list.
+        """
+
         list_id = request['list_id']
         offline_changelog = request['changelog']
         if list_id == 'null':
@@ -84,13 +135,21 @@ class Server:
 
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
 
-        if not self.db_management.add_changelogs(main_database_id, list_id, offline_changelog):
-            print('list doesnt exists')
-
+        self.db_management.add_changelogs(main_database_id, list_id, offline_changelog)
         list_object = self.db_management.retrieve_list(main_database_id, list_id)
         return json.dumps(list_object)
 
     def add_item(self, request):
+        """
+        Adds an item to a shopping list and returns success or failure.
+
+        Arguments:
+        - request (dict): Request containing 'list_id', 'name', and 'quantity'.
+
+        Returns:
+        - str: JSON string indicating success or failure.
+        """
+
         list_id = request['list_id']
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         log = {'timestamp': time.time(), 'operation': 'add', 'item': request['name'], 'quantity': request['quantity']}
@@ -101,6 +160,16 @@ class Server:
         return self.__success()
 
     def buy_item(self, request):
+        """
+        Buys an item in a shopping list and returns success or failure.
+
+        Arguments:
+        - request (dict): Request containing 'list_id', 'name', and 'quantity'.
+
+        Returns:
+        - str: JSON string indicating success or failure.
+        """
+
         list_id = request['list_id']
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         log = {'timestamp': time.time(), 'operation': 'buy', 'item': request['name'], 'quantity': request['quantity']}
@@ -112,6 +181,16 @@ class Server:
 
     # no caso do client adicionar uma shared list, o id da lista vem no list["name"]
     def create_list(self, request):
+        """
+        Creates a new shopping list or shares an existing one and returns the list ID.
+
+        Arguments:
+        - request (dict): Request containing 'list_name' and 'email'.
+
+        Returns:
+        - dict: JSON object indicating success or existing status with the list ID.
+        """
+
         existing_list = self.db_management.search_list(request['list_name'])
         if existing_list is None:
             list_id = DatabaseManagement.get_id(request['list_name'], request['email'])
@@ -128,6 +207,16 @@ class Server:
             return {"status": "existing", "data": existing_list}
 
     def delete_list(self, request):
+        """
+        Deletes a shopping list and returns success.
+
+        Arguments:
+        - request (dict): Request containing 'list_id'.
+
+        Returns:
+        - str: JSON string indicating success.
+        """
+
         list_id = request['list_id']
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         self.db_management.delete_list(main_database_id, list_id)
@@ -136,6 +225,16 @@ class Server:
         return self.__success()
 
     def delete_item(self, request):
+        """
+        Deletes an item from a shopping list and returns success or failure.
+
+        Arguments:
+        - request (dict): Request containing 'list_id' and 'name'.
+
+        Returns:
+        - str: JSON string indicating success or failure.
+        """
+
         list_id = request['list_id']
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         log = {'timestamp': time.time(), 'operation': 'delete', 'item': request['name']}
@@ -146,6 +245,16 @@ class Server:
         return self.__success()
 
     def rename_item(self, request):
+        """
+        Renames an item in a shopping list and returns success or failure.
+
+        Arguments:
+        - request (dict): Request containing 'list_id', 'name', and 'newName'.
+
+        Returns:
+        - str: JSON string indicating success or failure.
+        """
+
         list_id = request['list_id']
         main_database_id = self.hashing_ring.find_main_database_id(list_id)
         log = {'timestamp': time.time(), 'operation': 'rename', 'item': request['name'], 'newItem': request['newName']}
@@ -156,9 +265,20 @@ class Server:
         return self.__success()
 
     def get_user_email(self, token):
+        """
+        Decodes a JWT token and retrieves the user's email.
+
+        Arguments:
+        - token (str): JWT token.
+
+        Returns:
+        - str: User's email.
+        """
         return self.authentication_management.decode_token(token)
 
     def run(self):
+        """Runs the server, handling incoming requests and managing the terminal."""
+
         context = zmq.Context()
         socket = context.socket(zmq.REP)
         socket.connect("tcp://localhost:5560")
@@ -182,6 +302,10 @@ class Server:
 
 
 class RequestsServer(threading.Thread):
+    """ 
+    Thread do handle server requests.
+    """
+
     def __init__(self):
         super(RequestsServer, self).__init__(name="Requests Server Thread")
         self._stop_event = threading.Event()
@@ -195,6 +319,10 @@ class RequestsServer(threading.Thread):
 
 
 class DBTerminalManagement(threading.Thread):
+    """
+    Thread do manage terminal for database operations.
+    """
+
     def __init__(self):
         super(DBTerminalManagement, self).__init__(name="DB Terminal Management Thread")
         print('DB Terminal Management Online')
