@@ -447,7 +447,7 @@ class ShoppingLists {
         if (existingList) return;
 
         this.lists.push(name);
-        localStorage.setItem(name, []);
+        localStorage.setItem(name, JSON.stringify([]));
         if (list_id) localStorage.setItem(name + "_id", list_id);
 
         activeList = new ShoppingList(name);
