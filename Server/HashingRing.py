@@ -57,8 +57,14 @@ if __name__ == '__main__':
 
     database_management = DatabaseManagement()
     hashing_ring = HashingRing(database_management.get_num_connections())
-    print(hashing_ring.get_main_nodes_positions())
-    results = dict((x, 0) for x in range(database_management.get_num_connections()))
-    for i in range(10000):
-        results[hashing_ring.find_main_database_id(HashingRing.compute_md5_hash(i))] += 1
-    print(results)
+    list_name = "a"
+    while True:
+        print(list_name)
+        if 8 == hashing_ring.find_main_database_id(DatabaseManagement.get_id(list_name, "teste@gmail.com")):
+            print("FOUND!")
+            break
+        if list_name == 'z':
+            break
+        list_name = chr((ord(list_name) % 32) + 1 + ord('a') - 1) if list_name.islower() else chr(
+            (ord(list_name) % 32) + 1 + ord('A') - 1)
+

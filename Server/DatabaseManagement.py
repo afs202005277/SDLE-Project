@@ -19,20 +19,28 @@ class DatabaseManagement:
         self.num_replicas = 2
 
     def startup_merge_sync(self, db_id):
+        from HashingRing import HashingRing
+        hashing_ring = HashingRing(self.get_num_connections())
         for i in self.database_connections.keys():
             if i != db_id and self.database_connections_state[i]:
                 for l in self.__retrieve_lists(i):
                     list_id = l[0].decode('utf-8')
                     list_object = json.loads(l[1].decode('utf-8'))
-                    from HashingRing import HashingRing
-                    hashing_ring = HashingRing(self.get_num_connections())
                     main_db_id = hashing_ring.find_main_database_id(list_id)
-                    if i not in self.__get_db_and_replicas(main_db_id):
-                        self.__delete_list(i, list_id)
 
-                    if db_id == main_db_id:
+                    if db_id in self.__get_db_and_replicas(main_db_id):
                         self.__insert_list(db_id, list_object)
+                        self.merge_list(db_id, list_id)
+                    if self.database_connections_state[main_db_id]:
                         self.merge_list(main_db_id, list_id)
+
+        for i in self.database_connections.keys():
+            if i != db_id and self.database_connections_state[i]:
+                for l in self.__retrieve_lists(i):
+                    list_id = l[0].decode('utf-8')
+                    main_db_id = hashing_ring.find_main_database_id(list_id)
+                    if i not in self.__get_db_and_replicas(main_db_id) and db_id in self.__get_db_and_replicas(main_db_id):
+                        self.__delete_list(i, list_id)
 
     def update_num_lists(self):
         for i in self.database_connections.keys():
@@ -249,7 +257,6 @@ class DatabaseManagement:
 
         return True
 
-
     def merge_list(self, main_database_id, list_id):
         given_database_id = main_database_id
         main_database_id = self.__find_real_main_db_id(main_database_id)
@@ -276,6 +283,10 @@ class DatabaseManagement:
             changelogs_t_temp = set(frozenset(d.items()) for d in changelogs_together)
             changelogs_together = [dict(f) for f in changelogs_t_temp]
             changelogs_together = sorted(changelogs_together, key=lambda x: x['timestamp'])
+
+            print("----------")
+            print(changelogs_together)
+            print("----------")
             self.apply_changelogs(list_object, changelogs_together)
 
             if self.__in_a_row_dbs(dbs) and main_database_id == given_database_id:
