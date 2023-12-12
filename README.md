@@ -26,7 +26,7 @@ In 4 different terminal instances run the following services:
 - Flask webserver
 
 ```bash
-cd Client && flask --app __init__.py --debug run -p 6000
+cd Client && flask --app __init__.py --debug run -p 6969
 ```
 
 - ZMQ Proxy
