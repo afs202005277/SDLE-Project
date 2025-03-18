@@ -1,16 +1,23 @@
 # SDLE Project 23/24
 
-## Local-first shopping list application
+## Local-first Shopping List Application
 
-## How to run
+### Overview
+This project is a cloud-based application designed for collaborative shopping lists with real-time updates. It ensures fault tolerance and high availability by leveraging Amazon DynamoDB, consistent hashing, replication, sharding, and failover techniques. The system enables multiple users to manage shopping lists efficiently while maintaining data integrity and accessibility.
 
-Note: It's needed to install the BerkeleyDB.
+## Features
+- **Real-time Collaboration**: Multiple users can modify shopping lists simultaneously.
+- **Fault Tolerance**: Uses consistent hashing and replication to ensure system reliability.
+- **High Availability**: DynamoDB and sharding techniques guarantee data accessibility even in case of failures.
+- **Authentication and Security**: Implements JWT-based authentication to protect user data.
 
-https://docs.oracle.com/cd/E17076_05/html/installation/build_unix.html
+## Installation and Setup
 
-Required packages:
+### Prerequisites
+Ensure you have the following dependencies installed:
+- [BerkeleyDB](https://docs.oracle.com/cd/E17076_05/html/installation/build_unix.html)
 - [sqlite3](https://docs.python.org/3/library/sqlite3.html)
-- [jose](https://pypi.org/project/python-jose/)
+- [python-jose](https://pypi.org/project/python-jose/)
 - [passlib](https://pypi.org/project/passlib/)
 - [typing](https://docs.python.org/3/library/typing.html)
 - [zmq](https://zeromq.org/languages/python/)
@@ -19,65 +26,54 @@ Required packages:
 - [berkeleydb](https://docs.jcea.es/berkeleydb/latest/)
 - [threading](https://docs.python.org/3/library/threading.html)
 - [prettytable](https://pypi.org/project/prettytable/)
-- [jwt](https://pyjwt.readthedocs.io/en/stable/)
+- [PyJWT](https://pyjwt.readthedocs.io/en/stable/)
 
-In 4 different terminal instances run the following services:
+### Running the Application
+The system consists of multiple services that must be started in separate terminal instances:
 
-- Flask webserver
-
+#### 1. Start the Flask Web Server
 ```bash
 cd Client && flask --app __init__.py --debug run -p 6969
 ```
 
-- ZMQ Proxy
-
+#### 2. Start the ZMQ Proxy
 ```bash
 cd Server && python3 proxy.py
 ```
 
-- ZMQ Server
-
+#### 3. Start the ZMQ Server
 ```bash
 python3 Server_ZMQ.py
 ```
 
-- Authentication Server
-
+#### 4. Start the Authentication Server
 ```bash
 python3 AuthenticationServer.py
 ```
 
-Access the web interface in http://localhost:6000
+Once all services are running, access the web interface at: [http://localhost:6000](http://localhost:6000)
 
-## How to disable/enable databases instances
-
-The terminal that runs the ZMQ Server listens to commands:
+## Database Management
+The ZMQ Server terminal listens for the following commands to manage database instances:
 
 ```
 Available Commands:
 
-    **help** - Shows a list of the existing commands with a comprehensive explanation.
-
-    **list** - Lists the current existing DBs. Shows their ids, current state (ONLINE, OFFLINE), number of requests and number of shopping lists.
-
-    **create** - Creates a new DB for the server. The id of this DB is automatically assigned.
-
-    **enable [id]** - Enables a currently disabled DB. Receives an argument id which represents the id of the DB.
-
-    **disable [id]** - Disables an existing DB from the server. Receives an argument id which represents the id of the DB.
-
-    **printlists** - Prints all the lists in the databases. WARNING: Only run when necessary.
-    quit - Turns off the server and this management terminal.
-
-Notes:
-        Arguments can always be passed in front of any command. The only arguments that will ever be used are for commands that ask for them. Any command will alert in the case of a nonexistent/invalid argument.
+    help        - Displays a list of available commands with descriptions.
+    list        - Lists all existing databases with their IDs, statuses (ONLINE/OFFLINE), request counts, and number of shopping lists.
+    create      - Creates a new database instance with an automatically assigned ID.
+    enable [id] - Enables a currently disabled database.
+    disable [id]- Disables an existing database.
+    printlists  - Displays all shopping lists stored in the databases (Use with caution).
+    quit        - Shuts down the server and this management terminal.
 ```
 
-## Team
+*Note: Commands requiring arguments will notify you if an invalid or missing argument is provided.*
 
-| Name            | Number    |
-| --------------- | --------- |
-| Alexandre Nunes | 202005358 |
-| André Filipe Sousa     | 202005277 |
-| Gonçalo Pinto   | 202004907 |
-| Pedro Fonseca   | 202008307 |
+## Team
+| Name            | Student ID  |
+| -------------- | ----------- |
+| Alexandre Nunes | 202005358  |
+| André Filipe Sousa | 202005277  |
+| Gonçalo Pinto   | 202004907  |
+| Pedro Fonseca   | 202008307  |
